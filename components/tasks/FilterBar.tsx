@@ -1,9 +1,10 @@
 "use client";
 
-import { LayoutGrid, List, Search, ArrowDownAZ, ArrowUpAZ } from "lucide-react";
+import { LayoutGrid, List, Loader2, Search, ArrowDownAZ, ArrowUpAZ } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useRef, useState } from "react";
 import { Select } from "@/components/ui/Field";
+import { useViewTransition } from "@/components/tasks/ViewTransition";
 import {
   cn,
   PRIORITY_LABEL,
@@ -33,6 +34,7 @@ const SORT_OPTIONS: { value: string; label: string }[] = [
 export function FilterBar({ view }: { view: "table" | "board" }) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { pendingView, switchView } = useViewTransition();
   const urlQuery = searchParams.get("q") ?? "";
   const [search, setSearch] = useState(urlQuery);
   // Tracks the last URL value we've reconciled `search` against, so the
@@ -68,9 +70,10 @@ export function FilterBar({ view }: { view: "table" | "board" }) {
   const toggleOrder = () => setParam("order", order === "asc" ? "desc" : "asc");
 
   const setView = (next: "table" | "board") => {
+    if (next === view) return;
     const params = new URLSearchParams(searchParams.toString());
     params.set("view", next);
-    router.push(`/tasks?${params.toString()}`, { scroll: false });
+    switchView(next, () => router.push(`/tasks?${params.toString()}`, { scroll: false }));
   };
 
   return (
@@ -168,29 +171,41 @@ export function FilterBar({ view }: { view: "table" | "board" }) {
       <div className="flex items-center gap-1 rounded-lg bg-slate-100 p-1 dark:bg-slate-800">
         <button
           onClick={() => setView("table")}
+          disabled={pendingView !== null}
           aria-label="Table view"
           aria-pressed={view === "table"}
           className={cn(
-            "flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors",
+            "flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors disabled:cursor-wait",
             view === "table"
               ? "bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-slate-100"
               : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
           )}
         >
-          <List className="size-3.5" /> Table
+          {pendingView === "table" ? (
+            <Loader2 className="size-3.5 animate-spin" />
+          ) : (
+            <List className="size-3.5" />
+          )}
+          Table
         </button>
         <button
           onClick={() => setView("board")}
+          disabled={pendingView !== null}
           aria-label="Board view"
           aria-pressed={view === "board"}
           className={cn(
-            "flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors",
+            "flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors disabled:cursor-wait",
             view === "board"
               ? "bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-slate-100"
               : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
           )}
         >
-          <LayoutGrid className="size-3.5" /> Board
+          {pendingView === "board" ? (
+            <Loader2 className="size-3.5 animate-spin" />
+          ) : (
+            <LayoutGrid className="size-3.5" />
+          )}
+          Board
         </button>
       </div>
     </div>

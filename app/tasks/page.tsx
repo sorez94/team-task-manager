@@ -2,6 +2,8 @@ import type { Priority, Status, TaskType } from "@/lib/generated/prisma/client";
 import { FilterBar } from "@/components/tasks/FilterBar";
 import { TaskTable } from "@/components/tasks/TaskTable";
 import { TaskBoard } from "@/components/tasks/TaskBoard";
+import { NewTaskButton } from "@/components/tasks/NewTaskButton";
+import { TasksViewContent, ViewTransitionProvider } from "@/components/tasks/ViewTransition";
 import { getFilteredTasks, type DueFilter, type SortField, type SortOrder } from "@/lib/tasks-query";
 
 export const metadata = {
@@ -35,21 +37,28 @@ export default async function TasksPage({
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-100">Tasks</h1>
-        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-          {tasks.length} {tasks.length === 1 ? "task" : "tasks"}
-          {isFiltered ? " matching your filters" : " total"}
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-100">Tasks</h1>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+            {tasks.length} {tasks.length === 1 ? "task" : "tasks"}
+            {isFiltered ? " matching your filters" : " total"}
+          </p>
+        </div>
+        <NewTaskButton />
       </div>
 
-      <FilterBar view={view} />
+      <ViewTransitionProvider>
+        <FilterBar view={view} />
 
-      {view === "board" ? (
-        <TaskBoard tasks={tasks} isFiltered={isFiltered} />
-      ) : (
-        <TaskTable tasks={tasks} isFiltered={isFiltered} />
-      )}
+        <TasksViewContent>
+          {view === "board" ? (
+            <TaskBoard tasks={tasks} isFiltered={isFiltered} />
+          ) : (
+            <TaskTable tasks={tasks} isFiltered={isFiltered} />
+          )}
+        </TasksViewContent>
+      </ViewTransitionProvider>
     </div>
   );
 }
