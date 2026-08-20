@@ -1,10 +1,19 @@
 "use client";
 
-import { LayoutGrid, List, Search, ArrowDownAZ, ArrowUpAZ } from "lucide-react";
+import { LayoutGrid, List, Loader2, Search, ArrowDownAZ, ArrowUpAZ } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useRef, useState } from "react";
 import { Select } from "@/components/ui/Field";
-import { cn, PRIORITY_LABEL, PRIORITY_OPTIONS, STATUS_LABEL, STATUS_OPTIONS } from "@/lib/utils";
+import { useViewTransition } from "@/components/tasks/ViewTransition";
+import {
+  cn,
+  PRIORITY_LABEL,
+  PRIORITY_OPTIONS,
+  STATUS_LABEL,
+  STATUS_OPTIONS,
+  TYPE_LABEL,
+  TYPE_OPTIONS,
+} from "@/lib/utils";
 
 const DUE_OPTIONS: { value: string; label: string }[] = [
   { value: "ALL", label: "Any due date" },
@@ -22,9 +31,10 @@ const SORT_OPTIONS: { value: string; label: string }[] = [
   { value: "title", label: "Title" },
 ];
 
-export function FilterBar({ view }: { view: "table" | "board" }) {
+export function FilterBar({ view, assignees }: { view: "table" | "board"; assignees: string[] }) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { isPending, pendingView, switchView, startFilterTransition } = useViewTransition();
   const urlQuery = searchParams.get("q") ?? "";
   const [search, setSearch] = useState(urlQuery);
   // Tracks the last URL value we've reconciled `search` against, so the
@@ -47,7 +57,7 @@ export function FilterBar({ view }: { view: "table" | "board" }) {
     } else {
       params.set(key, value);
     }
-    router.push(`/tasks?${params.toString()}`, { scroll: false });
+    startFilterTransition(() => router.push(`/tasks?${params.toString()}`, { scroll: false }));
   };
 
   const handleSearchChange = (value: string) => {
@@ -60,24 +70,44 @@ export function FilterBar({ view }: { view: "table" | "board" }) {
   const toggleOrder = () => setParam("order", order === "asc" ? "desc" : "asc");
 
   const setView = (next: "table" | "board") => {
+    if (next === view) return;
     const params = new URLSearchParams(searchParams.toString());
     params.set("view", next);
-    router.push(`/tasks?${params.toString()}`, { scroll: false });
+    switchView(next, () => router.push(`/tasks?${params.toString()}`, { scroll: false }));
   };
 
   return (
     <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
       <div className="relative flex-1 sm:min-w-56">
-        <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
+        {isPending ? (
+          <Loader2 className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 animate-spin text-slate-400" />
+        ) : (
+          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
+        )}
         <input
           type="text"
           value={search}
           onChange={(e) => handleSearchChange(e.target.value)}
-          placeholder="Search title or description…"
+          placeholder="Search title, description, or assignee…"
           aria-label="Search tasks"
+          aria-busy={isPending}
           className="w-full rounded-lg border-0 bg-white py-2 pl-9 pr-3 text-sm text-slate-900 ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:bg-slate-900 dark:text-slate-100 dark:ring-slate-700"
         />
       </div>
+
+      <Select
+        aria-label="Filter by type"
+        value={searchParams.get("type") ?? "ALL"}
+        onChange={(e) => setParam("type", e.target.value)}
+        className="w-auto"
+      >
+        <option value="ALL">All types</option>
+        {TYPE_OPTIONS.map((t) => (
+          <option key={t} value={t}>
+            {TYPE_LABEL[t]}
+          </option>
+        ))}
+      </Select>
 
       <Select
         aria-label="Filter by status"
@@ -103,6 +133,21 @@ export function FilterBar({ view }: { view: "table" | "board" }) {
         {PRIORITY_OPTIONS.map((p) => (
           <option key={p} value={p}>
             {PRIORITY_LABEL[p]}
+          </option>
+        ))}
+      </Select>
+
+      <Select
+        aria-label="Filter by assignee"
+        value={searchParams.get("assignee") ?? "ALL"}
+        onChange={(e) => setParam("assignee", e.target.value)}
+        className="w-auto"
+      >
+        <option value="ALL">All assignees</option>
+        <option value="UNASSIGNED">Unassigned</option>
+        {assignees.map((a) => (
+          <option key={a} value={a}>
+            {a}
           </option>
         ))}
       </Select>
@@ -146,29 +191,41 @@ export function FilterBar({ view }: { view: "table" | "board" }) {
       <div className="flex items-center gap-1 rounded-lg bg-slate-100 p-1 dark:bg-slate-800">
         <button
           onClick={() => setView("table")}
+          disabled={pendingView !== null}
           aria-label="Table view"
           aria-pressed={view === "table"}
           className={cn(
-            "flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors",
+            "flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors disabled:cursor-wait",
             view === "table"
               ? "bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-slate-100"
               : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
           )}
         >
-          <List className="size-3.5" /> Table
+          {pendingView === "table" ? (
+            <Loader2 className="size-3.5 animate-spin" />
+          ) : (
+            <List className="size-3.5" />
+          )}
+          Table
         </button>
         <button
           onClick={() => setView("board")}
+          disabled={pendingView !== null}
           aria-label="Board view"
           aria-pressed={view === "board"}
           className={cn(
-            "flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors",
+            "flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors disabled:cursor-wait",
             view === "board"
               ? "bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-slate-100"
               : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
           )}
         >
-          <LayoutGrid className="size-3.5" /> Board
+          {pendingView === "board" ? (
+            <Loader2 className="size-3.5 animate-spin" />
+          ) : (
+            <LayoutGrid className="size-3.5" />
+          )}
+          Board
         </button>
       </div>
     </div>

@@ -25,3 +25,11 @@ export const Priority = {
 } as const
 
 export type Priority = (typeof Priority)[keyof typeof Priority]
+
+
+export const TaskType = {
+  BUG: 'BUG',
+  TASK: 'TASK'
+} as const
+
+export type TaskType = (typeof TaskType)[keyof typeof TaskType]

@@ -22,10 +22,16 @@ enum Priority {
   HIGH
 }
 
+enum TaskType {
+  BUG
+  TASK
+}
+
 model Task {
   id          String    @id @default(cuid())
   title       String
   description String?
+  type        TaskType  @default(BUG)
   status      Status    @default(TODO)
   priority    Priority  @default(MEDIUM)
   dueDate     DateTime?
@@ -35,6 +41,7 @@ model Task {
 
   @@index([status])
   @@index([priority])
+  @@index([type])
   @@index([dueDate])
   @@index([createdAt])
 }

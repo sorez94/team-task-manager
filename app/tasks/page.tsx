@@ -1,8 +1,16 @@
-import type { Priority, Status } from "@/lib/generated/prisma/client";
+import type { Priority, Status, TaskType } from "@/lib/generated/prisma/client";
 import { FilterBar } from "@/components/tasks/FilterBar";
 import { TaskTable } from "@/components/tasks/TaskTable";
 import { TaskBoard } from "@/components/tasks/TaskBoard";
-import { getFilteredTasks, type DueFilter, type SortField, type SortOrder } from "@/lib/tasks-query";
+import { NewTaskButton } from "@/components/tasks/NewTaskButton";
+import { TasksViewContent, ViewTransitionProvider } from "@/components/tasks/ViewTransition";
+import {
+  getDistinctAssignees,
+  getFilteredTasks,
+  type DueFilter,
+  type SortField,
+  type SortOrder,
+} from "@/lib/tasks-query";
 
 export const metadata = {
   title: "Tasks · Task Manager",
@@ -22,33 +30,47 @@ export default async function TasksPage({
   const params = await searchParams;
 
   const q = first(params.q) ?? "";
+  const type = (first(params.type) as TaskType | "ALL" | undefined) ?? "ALL";
   const status = (first(params.status) as Status | "ALL" | undefined) ?? "ALL";
   const priority = (first(params.priority) as Priority | "ALL" | undefined) ?? "ALL";
   const due = (first(params.due) as DueFilter | undefined) ?? "ALL";
+  const assignee = first(params.assignee) ?? "ALL";
   const sort = (first(params.sort) as SortField | undefined) ?? "createdAt";
   const order = (first(params.order) as SortOrder | undefined) ?? "desc";
-  const view = first(params.view) === "board" ? "board" : "table";
+  const view = first(params.view) === "table" ? "table" : "board";
 
-  const tasks = await getFilteredTasks({ q, status, priority, due, sort, order });
-  const isFiltered = Boolean(q || status !== "ALL" || priority !== "ALL" || due !== "ALL");
+  const [tasks, assignees] = await Promise.all([
+    getFilteredTasks({ q, type, status, priority, due, assignee, sort, order }),
+    getDistinctAssignees(),
+  ]);
+  const isFiltered = Boolean(
+    q || type !== "ALL" || status !== "ALL" || priority !== "ALL" || due !== "ALL" || assignee !== "ALL"
+  );
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-100">Tasks</h1>
-        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-          {tasks.length} {tasks.length === 1 ? "task" : "tasks"}
-          {isFiltered ? " matching your filters" : " total"}
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-100">Tasks</h1>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+            {tasks.length} {tasks.length === 1 ? "task" : "tasks"}
+            {isFiltered ? " matching your filters" : " total"}
+          </p>
+        </div>
+        <NewTaskButton />
       </div>
 
-      <FilterBar view={view} />
+      <ViewTransitionProvider>
+        <FilterBar view={view} assignees={assignees} />
 
-      {view === "board" ? (
-        <TaskBoard tasks={tasks} isFiltered={isFiltered} />
-      ) : (
-        <TaskTable tasks={tasks} isFiltered={isFiltered} />
-      )}
+        <TasksViewContent view={view}>
+          {view === "board" ? (
+            <TaskBoard tasks={tasks} isFiltered={isFiltered} />
+          ) : (
+            <TaskTable tasks={tasks} isFiltered={isFiltered} />
+          )}
+        </TasksViewContent>
+      </ViewTransitionProvider>
     </div>
   );
 }

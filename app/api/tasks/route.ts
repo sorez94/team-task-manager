@@ -3,7 +3,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { getFilteredTasks, type DueFilter, type SortField, type SortOrder } from "@/lib/tasks-query";
 import { taskFormSchema } from "@/lib/validations";
-import type { Priority, Status } from "@/lib/generated/prisma/client";
+import type { Priority, Status, TaskType } from "@/lib/generated/prisma/client";
 
 // GET /api/tasks — list tasks, with optional filtering/search/sort query params.
 // Example: /api/tasks?status=TODO&priority=HIGH&q=launch&sort=dueDate&order=asc
@@ -13,9 +13,11 @@ export async function GET(request: NextRequest) {
   try {
     const tasks = await getFilteredTasks({
       q: params.get("q") ?? undefined,
+      type: (params.get("type") as TaskType | "ALL" | null) ?? "ALL",
       status: (params.get("status") as Status | "ALL" | null) ?? "ALL",
       priority: (params.get("priority") as Priority | "ALL" | null) ?? "ALL",
       due: (params.get("due") as DueFilter | null) ?? "ALL",
+      assignee: params.get("assignee") ?? "ALL",
       sort: (params.get("sort") as SortField | null) ?? "createdAt",
       order: (params.get("order") as SortOrder | null) ?? "desc",
     });
@@ -42,12 +44,13 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const { title, description, status, priority, dueDate, assignee } = parsed.data;
+  const { title, description, type, status, priority, dueDate, assignee } = parsed.data;
 
   const task = await prisma.task.create({
     data: {
       title,
       description: description || null,
+      type,
       status,
       priority,
       dueDate: dueDate ? new Date(dueDate) : null,

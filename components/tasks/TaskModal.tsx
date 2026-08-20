@@ -8,12 +8,21 @@ import { Button } from "@/components/ui/Button";
 import { Label, Input, Textarea, Select, FieldError } from "@/components/ui/Field";
 import { createTask, updateTask } from "@/app/actions/tasks";
 import { useToast } from "@/app/providers/ToastProvider";
-import { PRIORITY_LABEL, PRIORITY_OPTIONS, STATUS_LABEL, STATUS_OPTIONS, toDateInputValue } from "@/lib/utils";
+import {
+  PRIORITY_LABEL,
+  PRIORITY_OPTIONS,
+  STATUS_LABEL,
+  STATUS_OPTIONS,
+  TYPE_LABEL,
+  TYPE_OPTIONS,
+  toDateInputValue,
+} from "@/lib/utils";
 import type { TaskFormErrors, TaskFormValues } from "@/lib/validations";
 
 const EMPTY_FORM: TaskFormValues = {
   title: "",
   description: "",
+  type: "BUG",
   status: "TODO",
   priority: "MEDIUM",
   dueDate: "",
@@ -25,6 +34,7 @@ function toFormValues(task: Task | null): TaskFormValues {
   return {
     title: task.title,
     description: task.description ?? "",
+    type: task.type,
     status: task.status,
     priority: task.priority,
     dueDate: toDateInputValue(task.dueDate),
@@ -124,7 +134,21 @@ export function TaskModal({
           <FieldError>{errors.description}</FieldError>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-3 gap-4">
+          <div>
+            <Label htmlFor="type">Type</Label>
+            <Select
+              id="type"
+              value={values.type}
+              onChange={(e) => update("type", e.target.value as TaskFormValues["type"])}
+            >
+              {TYPE_OPTIONS.map((t) => (
+                <option key={t} value={t}>
+                  {TYPE_LABEL[t]}
+                </option>
+              ))}
+            </Select>
+          </div>
           <div>
             <Label htmlFor="status">Status</Label>
             <Select

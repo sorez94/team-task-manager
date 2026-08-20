@@ -28,6 +28,7 @@ export type TaskMinAggregateOutputType = {
   id: string | null
   title: string | null
   description: string | null
+  type: $Enums.TaskType | null
   status: $Enums.Status | null
   priority: $Enums.Priority | null
   dueDate: Date | null
@@ -40,6 +41,7 @@ export type TaskMaxAggregateOutputType = {
   id: string | null
   title: string | null
   description: string | null
+  type: $Enums.TaskType | null
   status: $Enums.Status | null
   priority: $Enums.Priority | null
   dueDate: Date | null
@@ -52,6 +54,7 @@ export type TaskCountAggregateOutputType = {
   id: number
   title: number
   description: number
+  type: number
   status: number
   priority: number
   dueDate: number
@@ -66,6 +69,7 @@ export type TaskMinAggregateInputType = {
   id?: true
   title?: true
   description?: true
+  type?: true
   status?: true
   priority?: true
   dueDate?: true
@@ -78,6 +82,7 @@ export type TaskMaxAggregateInputType = {
   id?: true
   title?: true
   description?: true
+  type?: true
   status?: true
   priority?: true
   dueDate?: true
@@ -90,6 +95,7 @@ export type TaskCountAggregateInputType = {
   id?: true
   title?: true
   description?: true
+  type?: true
   status?: true
   priority?: true
   dueDate?: true
@@ -175,6 +181,7 @@ export type TaskGroupByOutputType = {
   id: string
   title: string
   description: string | null
+  type: $Enums.TaskType
   status: $Enums.Status
   priority: $Enums.Priority
   dueDate: Date | null
@@ -208,6 +215,7 @@ export type TaskWhereInput = {
   id?: Prisma.StringFilter<"Task"> | string
   title?: Prisma.StringFilter<"Task"> | string
   description?: Prisma.StringNullableFilter<"Task"> | string | null
+  type?: Prisma.EnumTaskTypeFilter<"Task"> | $Enums.TaskType
   status?: Prisma.EnumStatusFilter<"Task"> | $Enums.Status
   priority?: Prisma.EnumPriorityFilter<"Task"> | $Enums.Priority
   dueDate?: Prisma.DateTimeNullableFilter<"Task"> | Date | string | null
@@ -220,6 +228,7 @@ export type TaskOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   title?: Prisma.SortOrder
   description?: Prisma.SortOrderInput | Prisma.SortOrder
+  type?: Prisma.SortOrder
   status?: Prisma.SortOrder
   priority?: Prisma.SortOrder
   dueDate?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -235,6 +244,7 @@ export type TaskWhereUniqueInput = Prisma.AtLeast<{
   NOT?: Prisma.TaskWhereInput | Prisma.TaskWhereInput[]
   title?: Prisma.StringFilter<"Task"> | string
   description?: Prisma.StringNullableFilter<"Task"> | string | null
+  type?: Prisma.EnumTaskTypeFilter<"Task"> | $Enums.TaskType
   status?: Prisma.EnumStatusFilter<"Task"> | $Enums.Status
   priority?: Prisma.EnumPriorityFilter<"Task"> | $Enums.Priority
   dueDate?: Prisma.DateTimeNullableFilter<"Task"> | Date | string | null
@@ -247,6 +257,7 @@ export type TaskOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   title?: Prisma.SortOrder
   description?: Prisma.SortOrderInput | Prisma.SortOrder
+  type?: Prisma.SortOrder
   status?: Prisma.SortOrder
   priority?: Prisma.SortOrder
   dueDate?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -265,6 +276,7 @@ export type TaskScalarWhereWithAggregatesInput = {
   id?: Prisma.StringWithAggregatesFilter<"Task"> | string
   title?: Prisma.StringWithAggregatesFilter<"Task"> | string
   description?: Prisma.StringNullableWithAggregatesFilter<"Task"> | string | null
+  type?: Prisma.EnumTaskTypeWithAggregatesFilter<"Task"> | $Enums.TaskType
   status?: Prisma.EnumStatusWithAggregatesFilter<"Task"> | $Enums.Status
   priority?: Prisma.EnumPriorityWithAggregatesFilter<"Task"> | $Enums.Priority
   dueDate?: Prisma.DateTimeNullableWithAggregatesFilter<"Task"> | Date | string | null
@@ -277,6 +289,7 @@ export type TaskCreateInput = {
   id?: string
   title: string
   description?: string | null
+  type?: $Enums.TaskType
   status?: $Enums.Status
   priority?: $Enums.Priority
   dueDate?: Date | string | null
@@ -289,6 +302,7 @@ export type TaskUncheckedCreateInput = {
   id?: string
   title: string
   description?: string | null
+  type?: $Enums.TaskType
   status?: $Enums.Status
   priority?: $Enums.Priority
   dueDate?: Date | string | null
@@ -301,6 +315,7 @@ export type TaskUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  type?: Prisma.EnumTaskTypeFieldUpdateOperationsInput | $Enums.TaskType
   status?: Prisma.EnumStatusFieldUpdateOperationsInput | $Enums.Status
   priority?: Prisma.EnumPriorityFieldUpdateOperationsInput | $Enums.Priority
   dueDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -313,6 +328,7 @@ export type TaskUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  type?: Prisma.EnumTaskTypeFieldUpdateOperationsInput | $Enums.TaskType
   status?: Prisma.EnumStatusFieldUpdateOperationsInput | $Enums.Status
   priority?: Prisma.EnumPriorityFieldUpdateOperationsInput | $Enums.Priority
   dueDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -325,6 +341,7 @@ export type TaskCreateManyInput = {
   id?: string
   title: string
   description?: string | null
+  type?: $Enums.TaskType
   status?: $Enums.Status
   priority?: $Enums.Priority
   dueDate?: Date | string | null
@@ -337,6 +354,7 @@ export type TaskUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  type?: Prisma.EnumTaskTypeFieldUpdateOperationsInput | $Enums.TaskType
   status?: Prisma.EnumStatusFieldUpdateOperationsInput | $Enums.Status
   priority?: Prisma.EnumPriorityFieldUpdateOperationsInput | $Enums.Priority
   dueDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -349,6 +367,7 @@ export type TaskUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  type?: Prisma.EnumTaskTypeFieldUpdateOperationsInput | $Enums.TaskType
   status?: Prisma.EnumStatusFieldUpdateOperationsInput | $Enums.Status
   priority?: Prisma.EnumPriorityFieldUpdateOperationsInput | $Enums.Priority
   dueDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -361,6 +380,7 @@ export type TaskCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   title?: Prisma.SortOrder
   description?: Prisma.SortOrder
+  type?: Prisma.SortOrder
   status?: Prisma.SortOrder
   priority?: Prisma.SortOrder
   dueDate?: Prisma.SortOrder
@@ -373,6 +393,7 @@ export type TaskMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   title?: Prisma.SortOrder
   description?: Prisma.SortOrder
+  type?: Prisma.SortOrder
   status?: Prisma.SortOrder
   priority?: Prisma.SortOrder
   dueDate?: Prisma.SortOrder
@@ -385,6 +406,7 @@ export type TaskMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   title?: Prisma.SortOrder
   description?: Prisma.SortOrder
+  type?: Prisma.SortOrder
   status?: Prisma.SortOrder
   priority?: Prisma.SortOrder
   dueDate?: Prisma.SortOrder
@@ -399,6 +421,10 @@ export type StringFieldUpdateOperationsInput = {
 
 export type NullableStringFieldUpdateOperationsInput = {
   set?: string | null
+}
+
+export type EnumTaskTypeFieldUpdateOperationsInput = {
+  set?: $Enums.TaskType
 }
 
 export type EnumStatusFieldUpdateOperationsInput = {
@@ -423,6 +449,7 @@ export type TaskSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   id?: boolean
   title?: boolean
   description?: boolean
+  type?: boolean
   status?: boolean
   priority?: boolean
   dueDate?: boolean
@@ -435,6 +462,7 @@ export type TaskSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   id?: boolean
   title?: boolean
   description?: boolean
+  type?: boolean
   status?: boolean
   priority?: boolean
   dueDate?: boolean
@@ -447,6 +475,7 @@ export type TaskSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   id?: boolean
   title?: boolean
   description?: boolean
+  type?: boolean
   status?: boolean
   priority?: boolean
   dueDate?: boolean
@@ -459,6 +488,7 @@ export type TaskSelectScalar = {
   id?: boolean
   title?: boolean
   description?: boolean
+  type?: boolean
   status?: boolean
   priority?: boolean
   dueDate?: boolean
@@ -467,7 +497,7 @@ export type TaskSelectScalar = {
   updatedAt?: boolean
 }
 
-export type TaskOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "title" | "description" | "status" | "priority" | "dueDate" | "assignee" | "createdAt" | "updatedAt", ExtArgs["result"]["task"]>
+export type TaskOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "title" | "description" | "type" | "status" | "priority" | "dueDate" | "assignee" | "createdAt" | "updatedAt", ExtArgs["result"]["task"]>
 
 export type $TaskPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "Task"
@@ -476,6 +506,7 @@ export type $TaskPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     id: string
     title: string
     description: string | null
+    type: $Enums.TaskType
     status: $Enums.Status
     priority: $Enums.Priority
     dueDate: Date | null
@@ -908,6 +939,7 @@ export interface TaskFieldRefs {
   readonly id: Prisma.FieldRef<"Task", 'String'>
   readonly title: Prisma.FieldRef<"Task", 'String'>
   readonly description: Prisma.FieldRef<"Task", 'String'>
+  readonly type: Prisma.FieldRef<"Task", 'TaskType'>
   readonly status: Prisma.FieldRef<"Task", 'Status'>
   readonly priority: Prisma.FieldRef<"Task", 'Priority'>
   readonly dueDate: Prisma.FieldRef<"Task", 'DateTime'>

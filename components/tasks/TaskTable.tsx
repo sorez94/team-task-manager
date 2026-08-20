@@ -6,14 +6,16 @@ import type { Task } from "@/lib/generated/prisma/client";
 import { ClipboardList, Pencil, Trash2 } from "lucide-react";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { PriorityBadge } from "@/components/ui/PriorityBadge";
+import { TypeBadge } from "@/components/ui/TypeBadge";
 import { DueDateBadge } from "@/components/ui/DueDateBadge";
+import { AssigneeChip } from "@/components/ui/AssigneeChip";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { Button } from "@/components/ui/Button";
 import { useTaskModal } from "@/app/providers/TaskModalProvider";
 import { useToast } from "@/app/providers/ToastProvider";
 import { deleteTask } from "@/app/actions/tasks";
-import { cn, initials } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 
 export function TaskTable({ tasks, isFiltered }: { tasks: Task[]; isFiltered: boolean }) {
   const router = useRouter();
@@ -87,6 +89,7 @@ export function TaskTable({ tasks, isFiltered }: { tasks: Task[]; isFiltered: bo
               <tr>
                 <th className="w-10 px-4 py-3 sm:px-6" />
                 <th className="px-3 py-3 font-medium">Task</th>
+                <th className="hidden px-3 py-3 font-medium sm:table-cell">Type</th>
                 <th className="hidden px-3 py-3 font-medium sm:table-cell">Status</th>
                 <th className="hidden px-3 py-3 font-medium md:table-cell">Priority</th>
                 <th className="hidden px-3 py-3 font-medium lg:table-cell">Assignee</th>
@@ -131,10 +134,17 @@ export function TaskTable({ tasks, isFiltered }: { tasks: Task[]; isFiltered: bo
                           {task.description}
                         </p>
                       )}
-                      <div className="mt-1.5 flex gap-2 sm:hidden">
+                      <div className="mt-1.5 flex flex-wrap items-center gap-2 sm:hidden">
+                        <TypeBadge type={task.type} />
                         <StatusBadge status={task.status} />
                         <PriorityBadge priority={task.priority} />
                       </div>
+                      <div className="mt-1.5 lg:hidden">
+                        <AssigneeChip assignee={task.assignee} size="sm" />
+                      </div>
+                    </td>
+                    <td className="hidden px-3 py-4 sm:table-cell">
+                      <TypeBadge type={task.type} />
                     </td>
                     <td className="hidden px-3 py-4 sm:table-cell">
                       <StatusBadge status={task.status} />
@@ -143,16 +153,7 @@ export function TaskTable({ tasks, isFiltered }: { tasks: Task[]; isFiltered: bo
                       <PriorityBadge priority={task.priority} />
                     </td>
                     <td className="hidden px-3 py-4 lg:table-cell">
-                      {task.assignee ? (
-                        <div className="flex items-center gap-2">
-                          <span className="flex size-6 items-center justify-center rounded-full bg-indigo-100 text-[10px] font-semibold text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-300">
-                            {initials(task.assignee)}
-                          </span>
-                          <span className="text-sm text-slate-600 dark:text-slate-300">{task.assignee}</span>
-                        </div>
-                      ) : (
-                        <span className="text-sm text-slate-400 dark:text-slate-500">Unassigned</span>
-                      )}
+                      <AssigneeChip assignee={task.assignee} />
                     </td>
                     <td className="hidden px-3 py-4 xl:table-cell">
                       <DueDateBadge dueDate={task.dueDate} status={task.status} />

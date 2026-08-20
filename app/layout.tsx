@@ -15,12 +15,12 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-// Persian/Farsi glyph support. No UI translation — this only kicks in as a
-// fallback so Persian text typed into task titles/descriptions renders with
-// a proper Persian font instead of tofu boxes or a mismatched system font.
+// Vazirmatn is the default UI font (covers Latin + Arabic/Persian glyphs),
+// so Persian text typed into task titles/descriptions renders correctly
+// without any UI translation.
 const vazirmatn = Vazirmatn({
   variable: "--font-vazirmatn",
-  subsets: ["arabic"],
+  subsets: ["arabic", "latin"],
 });
 
 export const metadata: Metadata = {

@@ -58,12 +58,13 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       );
     }
 
-    const { title, description, status, priority, dueDate, assignee } = parsed.data;
+    const { title, description, type, status, priority, dueDate, assignee } = parsed.data;
     const task = await prisma.task.update({
       where: { id },
       data: {
         title,
         description: description || null,
+        type,
         status,
         priority,
         dueDate: dueDate ? new Date(dueDate) : null,
