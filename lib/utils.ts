@@ -1,5 +1,5 @@
 import { clsx, type ClassValue } from "clsx";
-import type { Priority, Status } from "@/lib/generated/prisma/client";
+import type { Priority, Status, TaskType } from "@/lib/generated/prisma/client";
 
 export function cn(...inputs: ClassValue[]) {
   return clsx(inputs);
@@ -17,8 +17,14 @@ export const PRIORITY_LABEL: Record<Priority, string> = {
   HIGH: "High",
 };
 
+export const TYPE_LABEL: Record<TaskType, string> = {
+  BUG: "Bug",
+  TASK: "Task",
+};
+
 export const STATUS_OPTIONS: Status[] = ["TODO", "IN_PROGRESS", "DONE"];
 export const PRIORITY_OPTIONS: Priority[] = ["LOW", "MEDIUM", "HIGH"];
+export const TYPE_OPTIONS: TaskType[] = ["TASK", "BUG"];
 
 export const STATUS_BADGE_CLASS: Record<Status, string> = {
   TODO: "bg-slate-100 text-slate-700 ring-1 ring-inset ring-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-700",
@@ -34,6 +40,11 @@ export const PRIORITY_BADGE_CLASS: Record<Priority, string> = {
   HIGH: "bg-rose-50 text-rose-700 ring-1 ring-inset ring-rose-200 dark:bg-rose-950 dark:text-rose-300 dark:ring-rose-800",
 };
 
+export const TYPE_BADGE_CLASS: Record<TaskType, string> = {
+  TASK: "bg-indigo-50 text-indigo-700 ring-1 ring-inset ring-indigo-200 dark:bg-indigo-950 dark:text-indigo-300 dark:ring-indigo-800",
+  BUG: "bg-rose-50 text-rose-700 ring-1 ring-inset ring-rose-200 dark:bg-rose-950 dark:text-rose-300 dark:ring-rose-800",
+};
+
 export const STATUS_DOT_CLASS: Record<Status, string> = {
   TODO: "bg-slate-400",
   IN_PROGRESS: "bg-blue-500",
@@ -44,6 +55,11 @@ export const PRIORITY_DOT_CLASS: Record<Priority, string> = {
   LOW: "bg-slate-400",
   MEDIUM: "bg-amber-500",
   HIGH: "bg-rose-500",
+};
+
+export const TYPE_DOT_CLASS: Record<TaskType, string> = {
+  TASK: "bg-indigo-500",
+  BUG: "bg-rose-500",
 };
 
 const dateFormatter = new Intl.DateTimeFormat("en-US", {

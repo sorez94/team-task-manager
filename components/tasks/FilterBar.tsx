@@ -4,7 +4,15 @@ import { LayoutGrid, List, Search, ArrowDownAZ, ArrowUpAZ } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useRef, useState } from "react";
 import { Select } from "@/components/ui/Field";
-import { cn, PRIORITY_LABEL, PRIORITY_OPTIONS, STATUS_LABEL, STATUS_OPTIONS } from "@/lib/utils";
+import {
+  cn,
+  PRIORITY_LABEL,
+  PRIORITY_OPTIONS,
+  STATUS_LABEL,
+  STATUS_OPTIONS,
+  TYPE_LABEL,
+  TYPE_OPTIONS,
+} from "@/lib/utils";
 
 const DUE_OPTIONS: { value: string; label: string }[] = [
   { value: "ALL", label: "Any due date" },
@@ -78,6 +86,20 @@ export function FilterBar({ view }: { view: "table" | "board" }) {
           className="w-full rounded-lg border-0 bg-white py-2 pl-9 pr-3 text-sm text-slate-900 ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:bg-slate-900 dark:text-slate-100 dark:ring-slate-700"
         />
       </div>
+
+      <Select
+        aria-label="Filter by type"
+        value={searchParams.get("type") ?? "ALL"}
+        onChange={(e) => setParam("type", e.target.value)}
+        className="w-auto"
+      >
+        <option value="ALL">All types</option>
+        {TYPE_OPTIONS.map((t) => (
+          <option key={t} value={t}>
+            {TYPE_LABEL[t]}
+          </option>
+        ))}
+      </Select>
 
       <Select
         aria-label="Filter by status"

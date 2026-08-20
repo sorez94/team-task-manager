@@ -3,9 +3,11 @@
 import type { Status, Task } from "@/lib/generated/prisma/client";
 import { Pencil, Trash2 } from "lucide-react";
 import { PriorityBadge } from "@/components/ui/PriorityBadge";
+import { TypeBadge } from "@/components/ui/TypeBadge";
 import { DueDateBadge } from "@/components/ui/DueDateBadge";
+import { AssigneeChip } from "@/components/ui/AssigneeChip";
 import { Select } from "@/components/ui/Field";
-import { STATUS_LABEL, STATUS_OPTIONS, cn, initials } from "@/lib/utils";
+import { STATUS_LABEL, STATUS_OPTIONS, cn } from "@/lib/utils";
 
 export function TaskCard({
   task,
@@ -57,27 +59,21 @@ export function TaskCard({
       )}
 
       <div className="mt-3 flex items-center justify-between gap-2">
-        <PriorityBadge priority={task.priority} />
+        <div className="flex items-center gap-1.5">
+          <TypeBadge type={task.type} />
+          <PriorityBadge priority={task.priority} />
+        </div>
         <DueDateBadge dueDate={task.dueDate} status={task.status} className="text-xs" />
       </div>
 
       <div className="mt-3 flex items-center justify-between gap-2 border-t border-slate-100 pt-3 dark:border-slate-800">
-        {task.assignee ? (
-          <div className="flex items-center gap-1.5 overflow-hidden">
-            <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-[9px] font-semibold text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-300">
-              {initials(task.assignee)}
-            </span>
-            <span className="truncate text-xs text-slate-600 dark:text-slate-300">{task.assignee}</span>
-          </div>
-        ) : (
-          <span className="text-xs text-slate-400 dark:text-slate-500">Unassigned</span>
-        )}
+        <AssigneeChip assignee={task.assignee} size="sm" className="min-w-0 flex-1" />
         <Select
           aria-label={`Change status for ${task.title}`}
           value={task.status}
           disabled={pending}
           onChange={(e) => onStatusChange(e.target.value as Status)}
-          className="w-auto py-1 text-xs"
+          className="!w-auto shrink-0 !py-1 !pl-2 !pr-6 !text-xs"
         >
           {STATUS_OPTIONS.map((s) => (
             <option key={s} value={s}>

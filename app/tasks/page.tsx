@@ -1,4 +1,4 @@
-import type { Priority, Status } from "@/lib/generated/prisma/client";
+import type { Priority, Status, TaskType } from "@/lib/generated/prisma/client";
 import { FilterBar } from "@/components/tasks/FilterBar";
 import { TaskTable } from "@/components/tasks/TaskTable";
 import { TaskBoard } from "@/components/tasks/TaskBoard";
@@ -22,15 +22,16 @@ export default async function TasksPage({
   const params = await searchParams;
 
   const q = first(params.q) ?? "";
+  const type = (first(params.type) as TaskType | "ALL" | undefined) ?? "ALL";
   const status = (first(params.status) as Status | "ALL" | undefined) ?? "ALL";
   const priority = (first(params.priority) as Priority | "ALL" | undefined) ?? "ALL";
   const due = (first(params.due) as DueFilter | undefined) ?? "ALL";
   const sort = (first(params.sort) as SortField | undefined) ?? "createdAt";
   const order = (first(params.order) as SortOrder | undefined) ?? "desc";
-  const view = first(params.view) === "board" ? "board" : "table";
+  const view = first(params.view) === "table" ? "table" : "board";
 
-  const tasks = await getFilteredTasks({ q, status, priority, due, sort, order });
-  const isFiltered = Boolean(q || status !== "ALL" || priority !== "ALL" || due !== "ALL");
+  const tasks = await getFilteredTasks({ q, type, status, priority, due, sort, order });
+  const isFiltered = Boolean(q || type !== "ALL" || status !== "ALL" || priority !== "ALL" || due !== "ALL");
 
   return (
     <div className="space-y-6">

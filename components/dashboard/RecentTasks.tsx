@@ -6,6 +6,7 @@ import { ClipboardList, ChevronRight } from "lucide-react";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { PriorityBadge } from "@/components/ui/PriorityBadge";
 import { DueDateBadge } from "@/components/ui/DueDateBadge";
+import { AssigneeChip } from "@/components/ui/AssigneeChip";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Button } from "@/components/ui/Button";
 import { useTaskModal } from "@/app/providers/TaskModalProvider";
@@ -57,9 +58,10 @@ export function RecentTasks({ tasks }: { tasks: Task[] }) {
                   >
                     {task.title}
                   </p>
-                  <div className="mt-1 flex items-center gap-2">
+                  <div className="mt-1 flex flex-wrap items-center gap-2">
                     <StatusBadge status={task.status} />
                     <PriorityBadge priority={task.priority} />
+                    <AssigneeChip assignee={task.assignee} size="sm" className="min-w-0 max-w-[10rem]" />
                   </div>
                 </div>
                 <DueDateBadge dueDate={task.dueDate} status={task.status} className="shrink-0" />

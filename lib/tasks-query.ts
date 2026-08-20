@@ -1,4 +1,4 @@
-import type { Prisma, Priority, Status } from "@/lib/generated/prisma/client";
+import type { Prisma, Priority, Status, TaskType } from "@/lib/generated/prisma/client";
 import { prisma } from "./prisma";
 import { startOfToday } from "./utils";
 
@@ -8,6 +8,7 @@ export type SortOrder = "asc" | "desc";
 
 export type TaskFilters = {
   q?: string;
+  type?: TaskType | "ALL";
   status?: Status | "ALL";
   priority?: Priority | "ALL";
   due?: DueFilter;
@@ -27,6 +28,10 @@ export function buildWhere(filters: TaskFilters): Prisma.TaskWhereInput {
         { description: { contains: filters.q } },
       ],
     });
+  }
+
+  if (filters.type && filters.type !== "ALL") {
+    conditions.push({ type: filters.type });
   }
 
   if (filters.status && filters.status !== "ALL") {

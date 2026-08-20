@@ -29,13 +29,14 @@ export async function createTask(values: TaskFormValues): Promise<ActionResult<{
     return { success: false, errors: toZodErrors(parsed.error) };
   }
 
-  const { title, description, status, priority, dueDate, assignee } = parsed.data;
+  const { title, description, type, status, priority, dueDate, assignee } = parsed.data;
 
   try {
     const task = await prisma.task.create({
       data: {
         title,
         description: description || null,
+        type,
         status,
         priority,
         dueDate: dueDate ? new Date(dueDate) : null,
@@ -58,7 +59,7 @@ export async function updateTask(
     return { success: false, errors: toZodErrors(parsed.error) };
   }
 
-  const { title, description, status, priority, dueDate, assignee } = parsed.data;
+  const { title, description, type, status, priority, dueDate, assignee } = parsed.data;
 
   try {
     await prisma.task.update({
@@ -66,6 +67,7 @@ export async function updateTask(
       data: {
         title,
         description: description || null,
+        type,
         status,
         priority,
         dueDate: dueDate ? new Date(dueDate) : null,

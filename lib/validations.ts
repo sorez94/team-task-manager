@@ -12,6 +12,7 @@ export const taskFormSchema = z.object({
     .max(2000, "Description must be 2000 characters or fewer")
     .optional()
     .or(z.literal("")),
+  type: z.enum(["TASK", "BUG"]),
   status: z.enum(["TODO", "IN_PROGRESS", "DONE"]),
   priority: z.enum(["LOW", "MEDIUM", "HIGH"]),
   dueDate: z
