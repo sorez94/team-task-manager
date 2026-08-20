@@ -12,6 +12,7 @@ export type TaskFilters = {
   status?: Status | "ALL";
   priority?: Priority | "ALL";
   due?: DueFilter;
+  assignee?: string | "ALL";
   sort?: SortField;
   order?: SortOrder;
 };
@@ -26,12 +27,19 @@ export function buildWhere(filters: TaskFilters): Prisma.TaskWhereInput {
       OR: [
         { title: { contains: filters.q } },
         { description: { contains: filters.q } },
+        { assignee: { contains: filters.q } },
       ],
     });
   }
 
   if (filters.type && filters.type !== "ALL") {
     conditions.push({ type: filters.type });
+  }
+
+  if (filters.assignee && filters.assignee !== "ALL") {
+    conditions.push(
+      filters.assignee === "UNASSIGNED" ? { assignee: null } : { assignee: filters.assignee }
+    );
   }
 
   if (filters.status && filters.status !== "ALL") {
@@ -83,6 +91,18 @@ export async function getFilteredTasks(filters: TaskFilters) {
     where,
     orderBy: { [sortField]: order },
   });
+}
+
+export async function getDistinctAssignees() {
+  const rows = await prisma.task.findMany({
+    where: { assignee: { not: null } },
+    select: { assignee: true },
+    distinct: ["assignee"],
+  });
+  return rows
+    .map((r) => r.assignee)
+    .filter((a): a is string => Boolean(a))
+    .sort((a, b) => a.localeCompare(b));
 }
 
 export async function getDashboardStats() {

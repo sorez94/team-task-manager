@@ -17,6 +17,7 @@ export async function GET(request: NextRequest) {
       status: (params.get("status") as Status | "ALL" | null) ?? "ALL",
       priority: (params.get("priority") as Priority | "ALL" | null) ?? "ALL",
       due: (params.get("due") as DueFilter | null) ?? "ALL",
+      assignee: params.get("assignee") ?? "ALL",
       sort: (params.get("sort") as SortField | null) ?? "createdAt",
       order: (params.get("order") as SortOrder | null) ?? "desc",
     });

@@ -9,6 +9,10 @@ type ViewTransitionContextValue = {
   isPending: boolean;
   pendingView: View | null;
   switchView: (view: View, navigate: () => void) => void;
+  // For navigations that don't change the table/board view (filter, search,
+  // sort changes) — keeps the current view's skeleton on screen instead of
+  // switching to a specific pendingView.
+  startFilterTransition: (navigate: () => void) => void;
 };
 
 const ViewTransitionContext = createContext<ViewTransitionContextValue | null>(null);
@@ -22,9 +26,19 @@ export function ViewTransitionProvider({ children }: { children: ReactNode }) {
     startTransition(navigate);
   };
 
+  const startFilterTransition = (navigate: () => void) => {
+    setPendingView(null);
+    startTransition(navigate);
+  };
+
   return (
     <ViewTransitionContext.Provider
-      value={{ isPending, pendingView: isPending ? pendingView : null, switchView }}
+      value={{
+        isPending,
+        pendingView: isPending ? pendingView : null,
+        switchView,
+        startFilterTransition,
+      }}
     >
       {children}
     </ViewTransitionContext.Provider>
@@ -37,14 +51,16 @@ export function useViewTransition() {
   return ctx;
 }
 
-// Swaps in a skeleton matching the view being navigated to while the
-// table/board switch is in flight, instead of leaving the old view on
-// screen with no feedback until the new URL's data has loaded.
-export function TasksViewContent({ children }: { children: ReactNode }) {
+// Swaps in a skeleton while any navigation triggered from this page (view
+// switch, filter/search/sort change) is in flight, instead of leaving stale
+// data on screen with no feedback until the new URL's data has loaded.
+// `view` is the current (already-committed) view, used as a fallback when
+// the pending navigation isn't a table/board switch.
+export function TasksViewContent({ children, view }: { children: ReactNode; view: View }) {
   const { isPending, pendingView } = useViewTransition();
 
   if (isPending) {
-    return pendingView === "table" ? <TableSkeleton /> : <BoardSkeleton />;
+    return (pendingView ?? view) === "table" ? <TableSkeleton /> : <BoardSkeleton />;
   }
 
   return <>{children}</>;

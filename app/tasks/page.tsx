@@ -4,7 +4,13 @@ import { TaskTable } from "@/components/tasks/TaskTable";
 import { TaskBoard } from "@/components/tasks/TaskBoard";
 import { NewTaskButton } from "@/components/tasks/NewTaskButton";
 import { TasksViewContent, ViewTransitionProvider } from "@/components/tasks/ViewTransition";
-import { getFilteredTasks, type DueFilter, type SortField, type SortOrder } from "@/lib/tasks-query";
+import {
+  getDistinctAssignees,
+  getFilteredTasks,
+  type DueFilter,
+  type SortField,
+  type SortOrder,
+} from "@/lib/tasks-query";
 
 export const metadata = {
   title: "Tasks · Task Manager",
@@ -28,12 +34,18 @@ export default async function TasksPage({
   const status = (first(params.status) as Status | "ALL" | undefined) ?? "ALL";
   const priority = (first(params.priority) as Priority | "ALL" | undefined) ?? "ALL";
   const due = (first(params.due) as DueFilter | undefined) ?? "ALL";
+  const assignee = first(params.assignee) ?? "ALL";
   const sort = (first(params.sort) as SortField | undefined) ?? "createdAt";
   const order = (first(params.order) as SortOrder | undefined) ?? "desc";
   const view = first(params.view) === "table" ? "table" : "board";
 
-  const tasks = await getFilteredTasks({ q, type, status, priority, due, sort, order });
-  const isFiltered = Boolean(q || type !== "ALL" || status !== "ALL" || priority !== "ALL" || due !== "ALL");
+  const [tasks, assignees] = await Promise.all([
+    getFilteredTasks({ q, type, status, priority, due, assignee, sort, order }),
+    getDistinctAssignees(),
+  ]);
+  const isFiltered = Boolean(
+    q || type !== "ALL" || status !== "ALL" || priority !== "ALL" || due !== "ALL" || assignee !== "ALL"
+  );
 
   return (
     <div className="space-y-6">
@@ -49,9 +61,9 @@ export default async function TasksPage({
       </div>
 
       <ViewTransitionProvider>
-        <FilterBar view={view} />
+        <FilterBar view={view} assignees={assignees} />
 
-        <TasksViewContent>
+        <TasksViewContent view={view}>
           {view === "board" ? (
             <TaskBoard tasks={tasks} isFiltered={isFiltered} />
           ) : (

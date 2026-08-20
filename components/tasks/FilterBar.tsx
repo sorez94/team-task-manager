@@ -31,10 +31,10 @@ const SORT_OPTIONS: { value: string; label: string }[] = [
   { value: "title", label: "Title" },
 ];
 
-export function FilterBar({ view }: { view: "table" | "board" }) {
+export function FilterBar({ view, assignees }: { view: "table" | "board"; assignees: string[] }) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { pendingView, switchView } = useViewTransition();
+  const { isPending, pendingView, switchView, startFilterTransition } = useViewTransition();
   const urlQuery = searchParams.get("q") ?? "";
   const [search, setSearch] = useState(urlQuery);
   // Tracks the last URL value we've reconciled `search` against, so the
@@ -57,7 +57,7 @@ export function FilterBar({ view }: { view: "table" | "board" }) {
     } else {
       params.set(key, value);
     }
-    router.push(`/tasks?${params.toString()}`, { scroll: false });
+    startFilterTransition(() => router.push(`/tasks?${params.toString()}`, { scroll: false }));
   };
 
   const handleSearchChange = (value: string) => {
@@ -79,13 +79,18 @@ export function FilterBar({ view }: { view: "table" | "board" }) {
   return (
     <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
       <div className="relative flex-1 sm:min-w-56">
-        <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
+        {isPending ? (
+          <Loader2 className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 animate-spin text-slate-400" />
+        ) : (
+          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
+        )}
         <input
           type="text"
           value={search}
           onChange={(e) => handleSearchChange(e.target.value)}
-          placeholder="Search title or description…"
+          placeholder="Search title, description, or assignee…"
           aria-label="Search tasks"
+          aria-busy={isPending}
           className="w-full rounded-lg border-0 bg-white py-2 pl-9 pr-3 text-sm text-slate-900 ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:bg-slate-900 dark:text-slate-100 dark:ring-slate-700"
         />
       </div>
@@ -128,6 +133,21 @@ export function FilterBar({ view }: { view: "table" | "board" }) {
         {PRIORITY_OPTIONS.map((p) => (
           <option key={p} value={p}>
             {PRIORITY_LABEL[p]}
+          </option>
+        ))}
+      </Select>
+
+      <Select
+        aria-label="Filter by assignee"
+        value={searchParams.get("assignee") ?? "ALL"}
+        onChange={(e) => setParam("assignee", e.target.value)}
+        className="w-auto"
+      >
+        <option value="ALL">All assignees</option>
+        <option value="UNASSIGNED">Unassigned</option>
+        {assignees.map((a) => (
+          <option key={a} value={a}>
+            {a}
           </option>
         ))}
       </Select>
