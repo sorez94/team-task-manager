@@ -20,7 +20,13 @@ export type TaskFilters = {
   assignee?: string | "ALL";
   sort?: SortField;
   order?: SortOrder;
+  // Pagination is opt-in: omit both to get every matching task (e.g. the
+  // board view, which lays tasks out by status rather than by page).
+  page?: number;
+  pageSize?: number;
 };
+
+export const DEFAULT_PAGE_SIZE = 20;
 
 const PRIORITY_WEIGHT: Record<Priority, number> = { LOW: 0, MEDIUM: 1, HIGH: 2, CRITICAL: 3 };
 
@@ -99,23 +105,39 @@ export function buildWhere(filters: TaskFilters): Prisma.TaskWhereInput {
 export async function getFilteredTasks(filters: TaskFilters) {
   const where = buildWhere(filters);
   const order = filters.order ?? "asc";
+  const page = filters.page && filters.page > 0 ? Math.floor(filters.page) : undefined;
+  const pageSize = filters.pageSize ?? DEFAULT_PAGE_SIZE;
 
   // Priority is ranked LOW < MEDIUM < HIGH rather than alphabetically, so it
-  // can't be handled by a plain Prisma `orderBy` — sort in JS instead.
+  // can't be handled by a plain Prisma `orderBy` — sort (and, if paginating,
+  // slice) in JS instead.
   if (filters.sort === "priority") {
     const tasks = await prisma.task.findMany({ where });
     tasks.sort((a, b) => {
       const diff = PRIORITY_WEIGHT[a.priority] - PRIORITY_WEIGHT[b.priority];
       return order === "asc" ? diff : -diff;
     });
-    return tasks;
+    if (!page) return { tasks, total: tasks.length };
+    const start = (page - 1) * pageSize;
+    return { tasks: tasks.slice(start, start + pageSize), total: tasks.length };
   }
 
   const sortField = filters.sort ?? "createdAt";
-  return prisma.task.findMany({
-    where,
-    orderBy: { [sortField]: order },
-  });
+  if (!page) {
+    const tasks = await prisma.task.findMany({ where, orderBy: { [sortField]: order } });
+    return { tasks, total: tasks.length };
+  }
+
+  const [tasks, total] = await Promise.all([
+    prisma.task.findMany({
+      where,
+      orderBy: { [sortField]: order },
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+    }),
+    prisma.task.count({ where }),
+  ]);
+  return { tasks, total };
 }
 
 export async function getDistinctAssignees() {

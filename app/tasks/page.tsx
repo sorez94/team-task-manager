@@ -1,10 +1,13 @@
+import { redirect } from "next/navigation";
 import type { Priority, Status, TaskArea, TaskType } from "@/lib/generated/prisma/client";
 import { FilterBar } from "@/components/tasks/FilterBar";
 import { TaskTable } from "@/components/tasks/TaskTable";
 import { TaskBoard } from "@/components/tasks/TaskBoard";
 import { NewTaskButton } from "@/components/tasks/NewTaskButton";
 import { TasksViewContent, ViewTransitionProvider } from "@/components/tasks/ViewTransition";
+import { Pagination } from "@/components/tasks/Pagination";
 import {
+  DEFAULT_PAGE_SIZE,
   getDistinctAssignees,
   getFilteredTasks,
   type DueFilter,
@@ -39,11 +42,42 @@ export default async function TasksPage({
   const sort = (first(params.sort) as SortField | undefined) ?? "createdAt";
   const order = (first(params.order) as SortOrder | undefined) ?? "desc";
   const view = first(params.view) === "table" ? "table" : "board";
+  // Pagination only applies to the table view — the board lays every
+  // matching task out by status column, so it always fetches the full set.
+  const page = Math.max(1, Number(first(params.page)) || 1);
 
-  const [tasks, assignees] = await Promise.all([
-    getFilteredTasks({ q, type, area, status, priority, due, assignee, sort, order }),
+  const [{ tasks, total }, assignees] = await Promise.all([
+    getFilteredTasks({
+      q,
+      type,
+      area,
+      status,
+      priority,
+      due,
+      assignee,
+      sort,
+      order,
+      ...(view === "table" ? { page, pageSize: DEFAULT_PAGE_SIZE } : {}),
+    }),
     getDistinctAssignees(),
   ]);
+  const pageCount = Math.max(1, Math.ceil(total / DEFAULT_PAGE_SIZE));
+  // A bookmarked or hand-edited URL can point past the last page once
+  // filters shrink the result set — send it back to the last valid page
+  // instead of rendering an empty table with a misleading "no tasks" state.
+  if (view === "table" && page > pageCount && total > 0) {
+    const redirectParams = new URLSearchParams(
+      Object.entries(params).flatMap(([key, value]) =>
+        value === undefined ? [] : (Array.isArray(value) ? value : [value]).map((v) => [key, v])
+      )
+    );
+    if (pageCount === 1) {
+      redirectParams.delete("page");
+    } else {
+      redirectParams.set("page", String(pageCount));
+    }
+    redirect(`/tasks?${redirectParams.toString()}`);
+  }
   const isFiltered = Boolean(
     q ||
       type !== "ALL" ||
@@ -60,7 +94,7 @@ export default async function TasksPage({
         <div>
           <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-100">Tasks</h1>
           <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-            {tasks.length} {tasks.length === 1 ? "task" : "tasks"}
+            {total} {total === 1 ? "task" : "tasks"}
             {isFiltered ? " matching your filters" : " total"}
           </p>
         </div>
@@ -74,7 +108,12 @@ export default async function TasksPage({
           {view === "board" ? (
             <TaskBoard tasks={tasks} isFiltered={isFiltered} />
           ) : (
-            <TaskTable tasks={tasks} isFiltered={isFiltered} />
+            <>
+              <TaskTable tasks={tasks} isFiltered={isFiltered} />
+              {tasks.length > 0 && (
+                <Pagination page={page} pageCount={pageCount} total={total} pageSize={DEFAULT_PAGE_SIZE} />
+              )}
+            </>
           )}
         </TasksViewContent>
       </ViewTransitionProvider>

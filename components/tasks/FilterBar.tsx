@@ -59,6 +59,10 @@ export function FilterBar({ view, assignees }: { view: "table" | "board"; assign
     } else {
       params.set(key, value);
     }
+    // Any filter/search/sort change can shrink or reorder the result set, so
+    // drop back to page 1 rather than stranding the user on a page that may
+    // no longer exist.
+    params.delete("page");
     startFilterTransition(() => router.push(`/tasks?${params.toString()}`, { scroll: false }));
   };
 

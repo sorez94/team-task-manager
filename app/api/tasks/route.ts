@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
   const params = request.nextUrl.searchParams;
 
   try {
-    const tasks = await getFilteredTasks({
+    const { tasks, total } = await getFilteredTasks({
       q: params.get("q") ?? undefined,
       type: (params.get("type") as TaskType | "ALL" | null) ?? "ALL",
       area: (params.get("area") as TaskArea | "ALL" | "UNSPECIFIED" | null) ?? "ALL",
@@ -22,8 +22,10 @@ export async function GET(request: NextRequest) {
       assignee: params.get("assignee") ?? "ALL",
       sort: (params.get("sort") as SortField | null) ?? "createdAt",
       order: (params.get("order") as SortOrder | null) ?? "desc",
+      page: params.get("page") ? Number(params.get("page")) : undefined,
+      pageSize: params.get("pageSize") ? Number(params.get("pageSize")) : undefined,
     });
-    return NextResponse.json({ tasks });
+    return NextResponse.json({ tasks, total });
   } catch {
     return NextResponse.json({ error: "Failed to load tasks" }, { status: 500 });
   }

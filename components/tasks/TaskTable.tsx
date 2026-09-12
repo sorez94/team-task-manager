@@ -86,7 +86,7 @@ export function TaskTable({ tasks, isFiltered }: { tasks: Task[]; isFiltered: bo
     <>
       <div className="overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
+          <table dir="rtl" className="w-full text-right text-sm">
             <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500 dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-400">
               <tr>
                 <th className="w-10 px-4 py-3 sm:px-6" />
