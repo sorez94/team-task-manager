@@ -1,4 +1,4 @@
-import type { Prisma, Priority, Status, TaskType } from "@/lib/generated/prisma/client";
+import type { Prisma, Priority, Status, TaskArea, TaskType } from "@/lib/generated/prisma/client";
 import { prisma } from "./prisma";
 import { startOfToday } from "./utils";
 
@@ -6,9 +6,14 @@ export type DueFilter = "ALL" | "OVERDUE" | "TODAY" | "WEEK" | "NONE";
 export type SortField = "dueDate" | "priority" | "createdAt" | "updatedAt" | "title";
 export type SortOrder = "asc" | "desc";
 
+// Statuses that mean a task is no longer actively in flight — excluded from
+// "overdue" reckoning the same way DONE always was.
+const INACTIVE_STATUSES: Status[] = ["DONE", "CANCELLED"];
+
 export type TaskFilters = {
   q?: string;
   type?: TaskType | "ALL";
+  area?: TaskArea | "ALL" | "UNSPECIFIED";
   status?: Status | "ALL";
   priority?: Priority | "ALL";
   due?: DueFilter;
@@ -17,7 +22,7 @@ export type TaskFilters = {
   order?: SortOrder;
 };
 
-const PRIORITY_WEIGHT: Record<Priority, number> = { LOW: 0, MEDIUM: 1, HIGH: 2 };
+const PRIORITY_WEIGHT: Record<Priority, number> = { LOW: 0, MEDIUM: 1, HIGH: 2, CRITICAL: 3 };
 
 export function buildWhere(filters: TaskFilters): Prisma.TaskWhereInput {
   const conditions: Prisma.TaskWhereInput[] = [];
@@ -34,6 +39,26 @@ export function buildWhere(filters: TaskFilters): Prisma.TaskWhereInput {
 
   if (filters.type && filters.type !== "ALL") {
     conditions.push({ type: filters.type });
+  }
+
+  if (filters.area && filters.area !== "ALL") {
+    if (filters.area === "UNSPECIFIED") {
+      conditions.push({ OR: [{ areas: null }, { areas: "" }] });
+    } else {
+      // `areas` is a comma-separated list (e.g. "FRONTEND,DESIGN"), so match
+      // it as a whole token rather than a plain substring — a `contains`
+      // check alone could false-positive if one area name were a substring
+      // of another.
+      const area = filters.area;
+      conditions.push({
+        OR: [
+          { areas: area },
+          { areas: { startsWith: `${area},` } },
+          { areas: { endsWith: `,${area}` } },
+          { areas: { contains: `,${area},` } },
+        ],
+      });
+    }
   }
 
   if (filters.assignee && filters.assignee !== "ALL") {
@@ -58,7 +83,7 @@ export function buildWhere(filters: TaskFilters): Prisma.TaskWhereInput {
     weekEnd.setDate(weekEnd.getDate() + 7);
 
     if (filters.due === "OVERDUE") {
-      conditions.push({ dueDate: { lt: today }, status: { not: "DONE" } });
+      conditions.push({ dueDate: { lt: today }, status: { notIn: INACTIVE_STATUSES } });
     } else if (filters.due === "TODAY") {
       conditions.push({ dueDate: { gte: today, lt: tomorrow } });
     } else if (filters.due === "WEEK") {
@@ -106,13 +131,14 @@ export async function getDistinctAssignees() {
 }
 
 export async function getDashboardStats() {
-  const [total, todo, inProgress, done, overdue, dueThisWeek, recent] = await Promise.all([
+  const [total, todo, doing, blocked, done, overdue, dueThisWeek, recent] = await Promise.all([
     prisma.task.count(),
     prisma.task.count({ where: { status: "TODO" } }),
-    prisma.task.count({ where: { status: "IN_PROGRESS" } }),
+    prisma.task.count({ where: { status: "DOING" } }),
+    prisma.task.count({ where: { status: "BLOCKED" } }),
     prisma.task.count({ where: { status: "DONE" } }),
     prisma.task.count({
-      where: { dueDate: { lt: startOfToday() }, status: { not: "DONE" } },
+      where: { dueDate: { lt: startOfToday() }, status: { notIn: INACTIVE_STATUSES } },
     }),
     prisma.task.count({
       where: {
@@ -120,11 +146,11 @@ export async function getDashboardStats() {
           gte: startOfToday(),
           lt: new Date(startOfToday().getTime() + 7 * 24 * 60 * 60 * 1000),
         },
-        status: { not: "DONE" },
+        status: { notIn: INACTIVE_STATUSES },
       },
     }),
     prisma.task.findMany({ orderBy: { updatedAt: "desc" }, take: 5 }),
   ]);
 
-  return { total, todo, inProgress, done, overdue, dueThisWeek, recent };
+  return { total, todo, doing, blocked, done, overdue, dueThisWeek, recent };
 }

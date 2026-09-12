@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { parseDuration } from "@/lib/utils";
 
 export const taskFormSchema = z.object({
   title: z
@@ -13,8 +14,9 @@ export const taskFormSchema = z.object({
     .optional()
     .or(z.literal("")),
   type: z.enum(["TASK", "BUG"]),
-  status: z.enum(["TODO", "IN_PROGRESS", "DONE"]),
-  priority: z.enum(["LOW", "MEDIUM", "HIGH"]),
+  areas: z.array(z.enum(["FRONTEND", "BACKEND", "DESIGN", "PRODUCT"])).default([]),
+  status: z.enum(["BACKLOG", "TODO", "DOING", "BLOCKED", "DONE", "CANCELLED"]),
+  priority: z.enum(["LOW", "MEDIUM", "HIGH", "CRITICAL"]),
   dueDate: z
     .string()
     .optional()
@@ -28,6 +30,15 @@ export const taskFormSchema = z.object({
     .max(80, "Assignee name must be 80 characters or fewer")
     .optional()
     .or(z.literal("")),
+  timeSpent: z
+    .string()
+    .trim()
+    .max(20, "Keep it short, e.g. 2h, 45m, or 1d")
+    .optional()
+    .or(z.literal(""))
+    .refine((val) => !val || parseDuration(val) !== null, {
+      message: "Enter a duration like 2h, 45m, or 1d",
+    }),
 });
 
 export type TaskFormValues = z.infer<typeof taskFormSchema>;

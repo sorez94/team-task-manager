@@ -7,9 +7,11 @@ A clean, production-ready task manager built with the Next.js App Router and Pri
 ## Features
 
 - Create, edit, delete, and complete/reopen tasks
-- Dashboard with summary stat cards (total, to do, in progress, completed, overdue) and a "recently updated" feed
+- Dashboard with summary stat cards (total, to do, doing, blocked, completed, overdue) and a "recently updated" feed
 - Table and Kanban board views for the task list
-- Filter by status, priority, and due date (overdue / due today / due this week / no due date)
+- Six-stage status workflow (Backlog, To Do, Doing, Blocked, Done, Cancelled)
+- Tag each task as Frontend or Backend work
+- Filter by status, priority, area, and due date (overdue / due today / due this week / no due date)
 - Search by title or description
 - Sortable by created date, updated date, due date, priority, or title
 - Status and priority badges, with overdue/due-soon highlighting
@@ -32,7 +34,7 @@ A clean, production-ready task manager built with the Next.js App Router and Pri
 ```
 task-manager/
 ├── prisma/
-│   ├── schema.prisma        # Task model, Status/Priority enums
+│   ├── schema.prisma        # Task model, Status/Priority/TaskType/TaskArea enums
 │   └── seed.ts               # Demo data seed script
 ├── prisma.config.ts          # Prisma CLI config (migrations, seed command, datasource url)
 ├── lib/
@@ -64,9 +66,12 @@ task-manager/
 
 ```prisma
 enum Status {
+  BACKLOG
   TODO
-  IN_PROGRESS
+  DOING
+  BLOCKED
   DONE
+  CANCELLED
 }
 
 enum Priority {
@@ -75,10 +80,24 @@ enum Priority {
   HIGH
 }
 
+enum TaskType {
+  BUG
+  TASK
+}
+
+// Which side of the stack a task belongs to. Nullable — not every task
+// cleanly maps to one side.
+enum TaskArea {
+  FRONTEND
+  BACKEND
+}
+
 model Task {
   id          String    @id @default(cuid())
   title       String
   description String?
+  type        TaskType  @default(BUG)
+  area        TaskArea?
   status      Status    @default(TODO)
   priority    Priority  @default(MEDIUM)
   dueDate     DateTime?
@@ -195,7 +214,7 @@ Once deployed, share the `*.vercel.app` URL with your team. There's no login —
 
 In addition to the Server Actions used by the UI (create/update/delete/status-change), a small REST API is available for external/programmatic use:
 
-- `GET /api/tasks` — list tasks (`?q=`, `?status=`, `?priority=`, `?due=`, `?sort=`, `?order=`)
+- `GET /api/tasks` — list tasks (`?q=`, `?status=`, `?priority=`, `?type=`, `?area=`, `?due=`, `?sort=`, `?order=`)
 - `POST /api/tasks` — create a task
 - `GET /api/tasks/:id` — fetch one task
 - `PATCH /api/tasks/:id` — update a task, or pass `{ "status": "DONE" }` for a quick status-only change

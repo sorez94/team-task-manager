@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { Prisma, type Status } from "@/lib/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
+import { parseDuration, serializeAreas } from "@/lib/utils";
 import { taskFormSchema, type TaskFormValues, type TaskFormErrors } from "@/lib/validations";
 
 type ActionResult<T> =
@@ -29,7 +30,7 @@ export async function createTask(values: TaskFormValues): Promise<ActionResult<{
     return { success: false, errors: toZodErrors(parsed.error) };
   }
 
-  const { title, description, type, status, priority, dueDate, assignee } = parsed.data;
+  const { title, description, type, areas, status, priority, dueDate, assignee, timeSpent } = parsed.data;
 
   try {
     const task = await prisma.task.create({
@@ -37,10 +38,12 @@ export async function createTask(values: TaskFormValues): Promise<ActionResult<{
         title,
         description: description || null,
         type,
+        areas: serializeAreas(areas),
         status,
         priority,
         dueDate: dueDate ? new Date(dueDate) : null,
         assignee: assignee || null,
+        timeSpentMinutes: timeSpent ? parseDuration(timeSpent) : null,
       },
     });
     revalidateTaskPaths();
@@ -59,7 +62,7 @@ export async function updateTask(
     return { success: false, errors: toZodErrors(parsed.error) };
   }
 
-  const { title, description, type, status, priority, dueDate, assignee } = parsed.data;
+  const { title, description, type, areas, status, priority, dueDate, assignee, timeSpent } = parsed.data;
 
   try {
     await prisma.task.update({
@@ -68,10 +71,12 @@ export async function updateTask(
         title,
         description: description || null,
         type,
+        areas: serializeAreas(areas),
         status,
         priority,
         dueDate: dueDate ? new Date(dueDate) : null,
         assignee: assignee || null,
+        timeSpentMinutes: timeSpent ? parseDuration(timeSpent) : null,
       },
     });
     revalidateTaskPaths();

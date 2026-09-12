@@ -10,9 +10,12 @@
 */
 
 export const Status = {
+  BACKLOG: 'BACKLOG',
   TODO: 'TODO',
-  IN_PROGRESS: 'IN_PROGRESS',
-  DONE: 'DONE'
+  DOING: 'DOING',
+  BLOCKED: 'BLOCKED',
+  DONE: 'DONE',
+  CANCELLED: 'CANCELLED'
 } as const
 
 export type Status = (typeof Status)[keyof typeof Status]
@@ -21,7 +24,8 @@ export type Status = (typeof Status)[keyof typeof Status]
 export const Priority = {
   LOW: 'LOW',
   MEDIUM: 'MEDIUM',
-  HIGH: 'HIGH'
+  HIGH: 'HIGH',
+  CRITICAL: 'CRITICAL'
 } as const
 
 export type Priority = (typeof Priority)[keyof typeof Priority]
@@ -33,3 +37,13 @@ export const TaskType = {
 } as const
 
 export type TaskType = (typeof TaskType)[keyof typeof TaskType]
+
+
+export const TaskArea = {
+  FRONTEND: 'FRONTEND',
+  BACKEND: 'BACKEND',
+  DESIGN: 'DESIGN',
+  PRODUCT: 'PRODUCT'
+} as const
+
+export type TaskArea = (typeof TaskArea)[keyof typeof TaskArea]

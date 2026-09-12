@@ -2,12 +2,14 @@
 
 import type { Status, Task } from "@/lib/generated/prisma/client";
 import { Pencil, Trash2 } from "lucide-react";
+import { AreaBadge } from "@/components/ui/AreaBadge";
 import { PriorityBadge } from "@/components/ui/PriorityBadge";
 import { TypeBadge } from "@/components/ui/TypeBadge";
 import { DueDateBadge } from "@/components/ui/DueDateBadge";
+import { TimeSpentBadge } from "@/components/ui/TimeSpentBadge";
 import { AssigneeChip } from "@/components/ui/AssigneeChip";
 import { Select } from "@/components/ui/Field";
-import { STATUS_LABEL, STATUS_OPTIONS, cn } from "@/lib/utils";
+import { parseAreas, STATUS_LABEL, STATUS_OPTIONS, cn } from "@/lib/utils";
 
 export function TaskCard({
   task,
@@ -32,7 +34,8 @@ export function TaskCard({
       <div className="flex items-start justify-between gap-2">
         <button
           onClick={onEdit}
-          className="text-left text-sm font-medium text-slate-900 hover:text-indigo-600 dark:text-slate-100 dark:hover:text-indigo-400"
+          dir="rtl"
+          className="text-sm font-medium text-slate-900 hover:text-indigo-600 dark:text-slate-100 dark:hover:text-indigo-400"
         >
           {task.title}
         </button>
@@ -55,15 +58,21 @@ export function TaskCard({
       </div>
 
       {task.description && (
-        <p className="mt-1 line-clamp-2 text-xs text-slate-500 dark:text-slate-400">{task.description}</p>
+        <p dir="rtl" className="mt-1 line-clamp-2 text-xs text-slate-500 dark:text-slate-400">
+          {task.description}
+        </p>
       )}
 
       <div className="mt-3 flex items-center justify-between gap-2">
-        <div className="flex items-center gap-1.5">
+        <div className="flex flex-wrap items-center gap-1.5">
           <TypeBadge type={task.type} />
+          <AreaBadge areas={parseAreas(task.areas)} />
           <PriorityBadge priority={task.priority} />
         </div>
-        <DueDateBadge dueDate={task.dueDate} status={task.status} className="text-xs" />
+        <div className="flex shrink-0 items-center gap-2">
+          <TimeSpentBadge minutes={task.timeSpentMinutes} />
+          <DueDateBadge dueDate={task.dueDate} status={task.status} className="text-xs" />
+        </div>
       </div>
 
       <div className="mt-3 flex items-center justify-between gap-2 border-t border-slate-100 pt-3 dark:border-slate-800">

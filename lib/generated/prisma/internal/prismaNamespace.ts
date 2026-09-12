@@ -532,10 +532,12 @@ export const TaskScalarFieldEnum = {
   title: 'title',
   description: 'description',
   type: 'type',
+  areas: 'areas',
   status: 'status',
   priority: 'priority',
   dueDate: 'dueDate',
   assignee: 'assignee',
+  timeSpentMinutes: 'timeSpentMinutes',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -604,6 +606,13 @@ export type DateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel
  * Reference to a field of type 'Int'
  */
 export type IntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Int'>
+    
+
+
+/**
+ * Reference to a field of type 'Float'
+ */
+export type FloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float'>
     
 
 /**

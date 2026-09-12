@@ -6,6 +6,8 @@ import { useRef, useState } from "react";
 import { Select } from "@/components/ui/Field";
 import { useViewTransition } from "@/components/tasks/ViewTransition";
 import {
+  AREA_LABEL,
+  AREA_OPTIONS,
   cn,
   PRIORITY_LABEL,
   PRIORITY_OPTIONS,
@@ -105,6 +107,21 @@ export function FilterBar({ view, assignees }: { view: "table" | "board"; assign
         {TYPE_OPTIONS.map((t) => (
           <option key={t} value={t}>
             {TYPE_LABEL[t]}
+          </option>
+        ))}
+      </Select>
+
+      <Select
+        aria-label="Filter by area"
+        value={searchParams.get("area") ?? "ALL"}
+        onChange={(e) => setParam("area", e.target.value)}
+        className="w-auto"
+      >
+        <option value="ALL">All areas</option>
+        <option value="UNSPECIFIED">Unspecified</option>
+        {AREA_OPTIONS.map((a) => (
+          <option key={a} value={a}>
+            {AREA_LABEL[a]}
           </option>
         ))}
       </Select>

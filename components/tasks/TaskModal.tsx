@@ -6,9 +6,14 @@ import type { Task } from "@/lib/generated/prisma/client";
 import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
 import { Label, Input, Textarea, Select, FieldError } from "@/components/ui/Field";
+import { CheckboxChips } from "@/components/ui/CheckboxChips";
 import { createTask, updateTask } from "@/app/actions/tasks";
 import { useToast } from "@/app/providers/ToastProvider";
 import {
+  AREA_LABEL,
+  AREA_OPTIONS,
+  formatDuration,
+  parseAreas,
   PRIORITY_LABEL,
   PRIORITY_OPTIONS,
   STATUS_LABEL,
@@ -23,10 +28,12 @@ const EMPTY_FORM: TaskFormValues = {
   title: "",
   description: "",
   type: "BUG",
+  areas: [],
   status: "TODO",
   priority: "MEDIUM",
   dueDate: "",
   assignee: "",
+  timeSpent: "",
 };
 
 function toFormValues(task: Task | null): TaskFormValues {
@@ -35,10 +42,12 @@ function toFormValues(task: Task | null): TaskFormValues {
     title: task.title,
     description: task.description ?? "",
     type: task.type,
+    areas: parseAreas(task.areas),
     status: task.status,
     priority: task.priority,
     dueDate: toDateInputValue(task.dueDate),
     assignee: task.assignee ?? "",
+    timeSpent: formatDuration(task.timeSpentMinutes) ?? "",
   };
 }
 
@@ -112,6 +121,7 @@ export function TaskModal({
           <Input
             id="title"
             autoFocus
+            dir="rtl"
             value={values.title}
             onChange={(e) => update("title", e.target.value)}
             placeholder="e.g. Draft Q3 roadmap"
@@ -126,6 +136,7 @@ export function TaskModal({
           <Textarea
             id="description"
             rows={3}
+            dir="rtl"
             value={values.description}
             onChange={(e) => update("description", e.target.value)}
             placeholder="Optional details about this task"
@@ -134,7 +145,7 @@ export function TaskModal({
           <FieldError>{errors.description}</FieldError>
         </div>
 
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <div>
             <Label htmlFor="type">Type</Label>
             <Select
@@ -179,7 +190,18 @@ export function TaskModal({
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div>
+          <Label>Area</Label>
+          <CheckboxChips
+            ariaLabel="Area"
+            options={AREA_OPTIONS}
+            labels={AREA_LABEL}
+            value={values.areas}
+            onChange={(next) => update("areas", next)}
+          />
+        </div>
+
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <div>
             <Label htmlFor="dueDate">Due date</Label>
             <Input
@@ -190,6 +212,17 @@ export function TaskModal({
               aria-invalid={Boolean(errors.dueDate)}
             />
             <FieldError>{errors.dueDate}</FieldError>
+          </div>
+          <div>
+            <Label htmlFor="timeSpent">Time spent</Label>
+            <Input
+              id="timeSpent"
+              value={values.timeSpent}
+              onChange={(e) => update("timeSpent", e.target.value)}
+              placeholder="e.g. 2h, 45m, 1d"
+              aria-invalid={Boolean(errors.timeSpent)}
+            />
+            <FieldError>{errors.timeSpent}</FieldError>
           </div>
           <div>
             <Label htmlFor="assignee">Assignee</Label>

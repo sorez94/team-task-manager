@@ -11,15 +11,19 @@ datasource db {
 }
 
 enum Status {
+  BACKLOG
   TODO
-  IN_PROGRESS
+  DOING
+  BLOCKED
   DONE
+  CANCELLED
 }
 
 enum Priority {
   LOW
   MEDIUM
   HIGH
+  CRITICAL
 }
 
 enum TaskType {
@@ -27,21 +31,39 @@ enum TaskType {
   TASK
 }
 
+// Which side(s) of the stack a task touches. A task can span more than one
+// area, so this isn't a column type SQLite has (no scalar-list support) —
+// see `areas` below, which stores it as a comma-separated list of these.
+enum TaskArea {
+  FRONTEND
+  BACKEND
+  DESIGN
+  PRODUCT
+}
+
 model Task {
-  id          String    @id @default(cuid())
-  title       String
-  description String?
-  type        TaskType  @default(BUG)
-  status      Status    @default(TODO)
-  priority    Priority  @default(MEDIUM)
-  dueDate     DateTime?
-  assignee    String?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id               String    @id @default(cuid())
+  title            String
+  description      String?
+  type             TaskType  @default(BUG)
+  // Comma-separated TaskArea values, e.g. "FRONTEND,DESIGN" — null/empty
+  // means unspecified. Parsed/serialized via parseAreas/serializeAreas in
+  // lib/utils.ts rather than stored as a native list (unsupported on SQLite).
+  areas            String?
+  status           Status    @default(TODO)
+  priority         Priority  @default(MEDIUM)
+  dueDate          DateTime?
+  assignee         String?
+  // Time logged on this task, in minutes. Entered/displayed compactly (e.g.
+  // "2h", "45m", "1d") via formatDuration/parseDuration in lib/utils.ts.
+  timeSpentMinutes Int?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
   @@index([status])
   @@index([priority])
   @@index([type])
+  @@index([areas])
   @@index([dueDate])
   @@index([createdAt])
 }

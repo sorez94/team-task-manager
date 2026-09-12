@@ -7,7 +7,9 @@ import { ClipboardList, Pencil, Trash2 } from "lucide-react";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { PriorityBadge } from "@/components/ui/PriorityBadge";
 import { TypeBadge } from "@/components/ui/TypeBadge";
+import { AreaBadge } from "@/components/ui/AreaBadge";
 import { DueDateBadge } from "@/components/ui/DueDateBadge";
+import { TimeSpentBadge } from "@/components/ui/TimeSpentBadge";
 import { AssigneeChip } from "@/components/ui/AssigneeChip";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
@@ -15,7 +17,7 @@ import { Button } from "@/components/ui/Button";
 import { useTaskModal } from "@/app/providers/TaskModalProvider";
 import { useToast } from "@/app/providers/ToastProvider";
 import { deleteTask } from "@/app/actions/tasks";
-import { cn } from "@/lib/utils";
+import { cn, parseAreas } from "@/lib/utils";
 
 export function TaskTable({ tasks, isFiltered }: { tasks: Task[]; isFiltered: boolean }) {
   const router = useRouter();
@@ -90,10 +92,12 @@ export function TaskTable({ tasks, isFiltered }: { tasks: Task[]; isFiltered: bo
                 <th className="w-10 px-4 py-3 sm:px-6" />
                 <th className="px-3 py-3 font-medium">Task</th>
                 <th className="hidden px-3 py-3 font-medium sm:table-cell">Type</th>
+                <th className="hidden px-3 py-3 font-medium md:table-cell">Area</th>
                 <th className="hidden px-3 py-3 font-medium sm:table-cell">Status</th>
                 <th className="hidden px-3 py-3 font-medium md:table-cell">Priority</th>
                 <th className="hidden px-3 py-3 font-medium lg:table-cell">Assignee</th>
                 <th className="hidden px-3 py-3 font-medium xl:table-cell">Due date</th>
+                <th className="hidden px-3 py-3 font-medium xl:table-cell">Time</th>
                 <th className="w-20 px-3 py-3 font-medium sm:px-6" />
               </tr>
             </thead>
@@ -122,22 +126,25 @@ export function TaskTable({ tasks, isFiltered }: { tasks: Task[]; isFiltered: bo
                     <td className="max-w-xs px-3 py-4">
                       <button
                         onClick={() => openEdit(task)}
+                        dir="rtl"
                         className={cn(
-                          "block truncate text-left font-medium text-slate-900 hover:text-indigo-600 dark:text-slate-100 dark:hover:text-indigo-400",
+                          "block break-words font-medium text-slate-900 hover:text-indigo-600 dark:text-slate-100 dark:hover:text-indigo-400",
                           done && "text-slate-400 line-through dark:text-slate-500"
                         )}
                       >
                         {task.title}
                       </button>
                       {task.description && (
-                        <p className="mt-0.5 truncate text-xs text-slate-500 dark:text-slate-400">
+                        <p dir="rtl" className="mt-0.5 truncate text-xs text-slate-500 dark:text-slate-400">
                           {task.description}
                         </p>
                       )}
                       <div className="mt-1.5 flex flex-wrap items-center gap-2 sm:hidden">
                         <TypeBadge type={task.type} />
+                        <AreaBadge areas={parseAreas(task.areas)} />
                         <StatusBadge status={task.status} />
                         <PriorityBadge priority={task.priority} />
+                        <TimeSpentBadge minutes={task.timeSpentMinutes} />
                       </div>
                       <div className="mt-1.5 lg:hidden">
                         <AssigneeChip assignee={task.assignee} size="sm" />
@@ -145,6 +152,9 @@ export function TaskTable({ tasks, isFiltered }: { tasks: Task[]; isFiltered: bo
                     </td>
                     <td className="hidden px-3 py-4 sm:table-cell">
                       <TypeBadge type={task.type} />
+                    </td>
+                    <td className="hidden px-3 py-4 md:table-cell">
+                      <AreaBadge areas={parseAreas(task.areas)} />
                     </td>
                     <td className="hidden px-3 py-4 sm:table-cell">
                       <StatusBadge status={task.status} />
@@ -157,6 +167,9 @@ export function TaskTable({ tasks, isFiltered }: { tasks: Task[]; isFiltered: bo
                     </td>
                     <td className="hidden px-3 py-4 xl:table-cell">
                       <DueDateBadge dueDate={task.dueDate} status={task.status} />
+                    </td>
+                    <td className="hidden px-3 py-4 xl:table-cell">
+                      <TimeSpentBadge minutes={task.timeSpentMinutes} />
                     </td>
                     <td className="px-3 py-4 sm:px-6">
                       <div className="flex items-center justify-end gap-1">

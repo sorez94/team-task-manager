@@ -1,4 +1,4 @@
-import { ListTodo, Loader, CheckCircle2, AlertTriangle } from "lucide-react";
+import { ListTodo, Loader, CheckCircle2, AlertTriangle, ShieldAlert } from "lucide-react";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { RecentTasks } from "@/components/dashboard/RecentTasks";
 import { getDashboardStats } from "@/lib/tasks-query";
@@ -21,16 +21,17 @@ export default async function DashboardPage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         <StatCard label="Total tasks" value={stats.total} icon={ListTodo} accent="slate" />
         <StatCard label="To do" value={stats.todo} icon={ListTodo} accent="slate" />
-        <StatCard label="In progress" value={stats.inProgress} icon={Loader} accent="blue" />
+        <StatCard label="Doing" value={stats.doing} icon={Loader} accent="blue" />
+        <StatCard label="Blocked" value={stats.blocked} icon={ShieldAlert} accent="rose" />
         <StatCard label="Completed" value={stats.done} icon={CheckCircle2} accent="emerald" />
         <StatCard
           label="Overdue"
           value={stats.overdue}
           icon={AlertTriangle}
-          accent="rose"
+          accent="amber"
           hint={stats.dueThisWeek > 0 ? `${stats.dueThisWeek} due within 7 days` : undefined}
         />
       </div>
