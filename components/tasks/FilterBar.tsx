@@ -106,7 +106,7 @@ export function FilterBar({ view, assignees }: { view: "table" | "board"; assign
         aria-label="Filter by type"
         value={searchParams.get("type") ?? "ALL"}
         onChange={(e) => setParam("type", e.target.value)}
-        className="w-auto"
+        className="!w-auto"
       >
         <option value="ALL">All types</option>
         {TYPE_OPTIONS.map((t) => (
@@ -120,7 +120,7 @@ export function FilterBar({ view, assignees }: { view: "table" | "board"; assign
         aria-label="Filter by area"
         value={searchParams.get("area") ?? "ALL"}
         onChange={(e) => setParam("area", e.target.value)}
-        className="w-auto"
+        className="!w-auto"
       >
         <option value="ALL">All areas</option>
         <option value="UNSPECIFIED">Unspecified</option>
@@ -135,7 +135,7 @@ export function FilterBar({ view, assignees }: { view: "table" | "board"; assign
         aria-label="Filter by status"
         value={searchParams.get("status") ?? "ALL"}
         onChange={(e) => setParam("status", e.target.value)}
-        className="w-auto"
+        className="!w-auto"
       >
         <option value="ALL">All statuses</option>
         {STATUS_OPTIONS.map((s) => (
@@ -149,7 +149,7 @@ export function FilterBar({ view, assignees }: { view: "table" | "board"; assign
         aria-label="Filter by priority"
         value={searchParams.get("priority") ?? "ALL"}
         onChange={(e) => setParam("priority", e.target.value)}
-        className="w-auto"
+        className="!w-auto"
       >
         <option value="ALL">All priorities</option>
         {PRIORITY_OPTIONS.map((p) => (
@@ -163,7 +163,7 @@ export function FilterBar({ view, assignees }: { view: "table" | "board"; assign
         aria-label="Filter by assignee"
         value={searchParams.get("assignee") ?? "ALL"}
         onChange={(e) => setParam("assignee", e.target.value)}
-        className="w-auto"
+        className="!w-auto"
       >
         <option value="ALL">All assignees</option>
         <option value="UNASSIGNED">Unassigned</option>
@@ -178,7 +178,7 @@ export function FilterBar({ view, assignees }: { view: "table" | "board"; assign
         aria-label="Filter by due date"
         value={searchParams.get("due") ?? "ALL"}
         onChange={(e) => setParam("due", e.target.value)}
-        className="w-auto"
+        className="!w-auto"
       >
         {DUE_OPTIONS.map((d) => (
           <option key={d.value} value={d.value}>
@@ -192,7 +192,7 @@ export function FilterBar({ view, assignees }: { view: "table" | "board"; assign
           aria-label="Sort by"
           value={searchParams.get("sort") ?? "createdAt"}
           onChange={(e) => setParam("sort", e.target.value)}
-          className="w-auto"
+          className="!w-auto"
         >
           {SORT_OPTIONS.map((s) => (
             <option key={s.value} value={s.value}>
