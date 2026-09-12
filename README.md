@@ -101,7 +101,7 @@ model Task {
   status      Status    @default(TODO)
   priority    Priority  @default(MEDIUM)
   dueDate     DateTime?
-  assignee    String?
+  assignees   String?   // comma-separated list of free-text names
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 }

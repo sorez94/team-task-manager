@@ -53,7 +53,11 @@ model Task {
   status           Status    @default(TODO)
   priority         Priority  @default(MEDIUM)
   dueDate          DateTime?
-  assignee         String?
+  // Comma-separated list of free-text assignee names, e.g. "Amelia Chen,Marcus Reid"
+  // — null/empty means unassigned. A task can have more than one assignee, so
+  // this isn't a single scalar column any more than `areas` is; it's parsed/
+  // serialized via parseAssignees/serializeAssignees in lib/utils.ts.
+  assignees        String?
   // Time logged on this task, in minutes. Entered/displayed compactly (e.g.
   // "2h", "45m", "1d") via formatDuration/parseDuration in lib/utils.ts.
   timeSpentMinutes Int?
@@ -64,6 +68,7 @@ model Task {
   @@index([priority])
   @@index([type])
   @@index([areas])
+  @@index([assignees])
   @@index([dueDate])
   @@index([createdAt])
 }

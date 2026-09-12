@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import type { Task } from "@/lib/generated/prisma/client";
 import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
 import { Label, Input, Textarea, Select, FieldError } from "@/components/ui/Field";
 import { CheckboxChips } from "@/components/ui/CheckboxChips";
+import { AssigneesInput } from "@/components/ui/AssigneesInput";
 import { createTask, updateTask } from "@/app/actions/tasks";
 import { useToast } from "@/app/providers/ToastProvider";
 import {
@@ -14,6 +15,7 @@ import {
   AREA_OPTIONS,
   formatDuration,
   parseAreas,
+  parseAssignees,
   PRIORITY_LABEL,
   PRIORITY_OPTIONS,
   STATUS_LABEL,
@@ -32,7 +34,7 @@ const EMPTY_FORM: TaskFormValues = {
   status: "TODO",
   priority: "MEDIUM",
   dueDate: "",
-  assignee: "",
+  assignees: [],
   timeSpent: "",
 };
 
@@ -46,7 +48,7 @@ function toFormValues(task: Task | null): TaskFormValues {
     status: task.status,
     priority: task.priority,
     dueDate: toDateInputValue(task.dueDate),
-    assignee: task.assignee ?? "",
+    assignees: parseAssignees(task.assignees),
     timeSpent: formatDuration(task.timeSpentMinutes) ?? "",
   };
 }
@@ -65,8 +67,26 @@ export function TaskModal({
   const [errors, setErrors] = useState<TaskFormErrors>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [assigneeSuggestions, setAssigneeSuggestions] = useState<string[]>([]);
   const router = useRouter();
   const { showToast } = useToast();
+
+  // Best-effort autocomplete data — fetched fresh each time the modal opens
+  // so a name added elsewhere in the same session shows up. A failed fetch
+  // just means no suggestions, not a broken form.
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    fetch("/api/tasks/assignees")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!cancelled && data?.assignees) setAssigneeSuggestions(data.assignees);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [open]);
 
   // Reset the form whenever the modal opens for a (possibly different) task,
   // including reopening for the *same* task after a cancelled edit.
@@ -201,7 +221,7 @@ export function TaskModal({
           />
         </div>
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <Label htmlFor="dueDate">Due date</Label>
             <Input
@@ -224,17 +244,18 @@ export function TaskModal({
             />
             <FieldError>{errors.timeSpent}</FieldError>
           </div>
-          <div>
-            <Label htmlFor="assignee">Assignee</Label>
-            <Input
-              id="assignee"
-              value={values.assignee}
-              onChange={(e) => update("assignee", e.target.value)}
-              placeholder="Team member name"
-              aria-invalid={Boolean(errors.assignee)}
-            />
-            <FieldError>{errors.assignee}</FieldError>
-          </div>
+        </div>
+
+        <div>
+          <Label htmlFor="assignees">Assignees</Label>
+          <AssigneesInput
+            id="assignees"
+            value={values.assignees}
+            onChange={(next) => update("assignees", next)}
+            suggestions={assigneeSuggestions}
+            aria-invalid={Boolean(errors.assignees)}
+          />
+          <FieldError>{errors.assignees}</FieldError>
         </div>
 
         {formError && (

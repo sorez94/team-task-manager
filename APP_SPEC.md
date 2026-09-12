@@ -44,7 +44,7 @@ Task
 ├── status            Enum      Status      — default TODO
 ├── priority          Enum      Priority    — default MEDIUM
 ├── dueDate           DateTime? (date only, no time-of-day significance)
-├── assignee          String?   (free-text name, not a user reference)
+├── assignees         String?   (comma-separated free-text names, see "Assignees encoding" below)
 ├── timeSpentMinutes  Int?      (time logged, stored as raw minutes)
 ├── createdAt         DateTime  (set once, on creation)
 └── updatedAt         DateTime  (bumped on every update)
@@ -63,9 +63,13 @@ Task
 - `parseAreas(raw)` → splits on `,`, trims, and drops any token that isn't a recognized `TaskArea` value; returns `[]` for null/empty input.
 - `serializeAreas(list)` → joins the list with `,`; returns `null` if the list is empty (never stores an empty string).
 
+**Assignees encoding:** a task can have zero or more assignees (free-text names, not user references). Same convention as areas — stored as a comma-separated string (e.g. `"Amelia Chen,Marcus Reid"`), or `null` for "unassigned". Helper functions:
+- `parseAssignees(raw)` → splits on `,`, trims each name, and drops empty tokens; returns `[]` for null/empty input.
+- `serializeAssignees(list)` → trims and drops empty names, joins with `,`; returns `null` if the resulting list is empty (never stores an empty string). A name may not itself contain a comma (rejected at validation).
+
 **Time spent encoding:** stored as a plain integer number of minutes (`null` if not logged). Entered and displayed as a compact human string — see §6.1.
 
-**Indexes:** on `status`, `priority`, `type`, `areas`, `dueDate`, `createdAt` — i.e., every field used as a filter or sort key.
+**Indexes:** on `status`, `priority`, `type`, `areas`, `assignees`, `dueDate`, `createdAt` — i.e., every field used as a filter or sort key.
 
 ## 5. Formatting / parsing utilities (exact algorithms)
 
@@ -117,10 +121,10 @@ A single schema governs both the UI form and every server-side write path (serve
 | `status` | Required, one of the 6 `Status` values. |
 | `priority` | Required, one of the 4 `Priority` values. |
 | `dueDate` | Optional. Empty string allowed. If non-empty, must parse as a valid date. |
-| `assignee` | Optional, trimmed, ≤ 80 characters. Empty string allowed (treated as unassigned). |
+| `assignees` | Array of names, defaults to `[]` if omitted. Each name trimmed, 1–80 characters, and may not contain a comma. At most 20 entries. |
 | `timeSpent` | Optional, trimmed, ≤ 20 characters. Empty allowed. If non-empty, must successfully parse via §5.1 (`parseDuration`) — error message: *"Enter a duration like 2h, 45m, or 1d"*. |
 
-On write, empty-string optional fields are normalized to `null` before persisting (`description || null`, `assignee || null`), `dueDate` is converted with `new Date(dueDate)` or `null`, `timeSpent` is converted through `parseDuration` to `timeSpentMinutes` (or `null`), and `areas` is converted through `serializeAreas`.
+On write, empty-string optional fields are normalized to `null` before persisting (`description || null`), `dueDate` is converted with `new Date(dueDate)` or `null`, `timeSpent` is converted through `parseDuration` to `timeSpentMinutes` (or `null`), `areas` is converted through `serializeAreas`, and `assignees` is converted through `serializeAssignees`.
 
 Validation errors are reported per-field (first error per field wins if a field has multiple issues) so the UI can show them inline next to each input.
 
@@ -132,12 +136,12 @@ All task listing (dashboard stats, table view, board view, REST API) goes throug
 
 | Filter | Values | Behavior |
 |---|---|---|
-| `q` | free text | Matches if `title`, `description`, or `assignee` **contains** the text (case handling per DB collation; no fuzzy matching). |
+| `q` | free text | Matches if `title`, `description`, or `assignees` **contains** the text (case handling per DB collation; no fuzzy matching). |
 | `type` | `ALL` \| `TaskType` | Exact match, or no filter if `ALL`. |
 | `area` | `ALL` \| `UNSPECIFIED` \| `TaskArea` | `ALL` = no filter. `UNSPECIFIED` = `areas` is null or empty string. Otherwise: match the comma-list as a **whole token** — equals the value, starts with `"{area},"`, ends with `",{area}"`, or contains `",{area},"` (never a plain substring match, to avoid one area name accidentally matching inside another). |
 | `status` | `ALL` \| `Status` | Exact match. |
 | `priority` | `ALL` \| `Priority` | Exact match. |
-| `assignee` | `ALL` \| `UNASSIGNED` \| name | `ALL` = no filter. `UNASSIGNED` = `assignee IS NULL`. Otherwise exact match on the name string. |
+| `assignee` | `ALL` \| `UNASSIGNED` \| name | Filters on the multi-valued `assignees` list, not a single-assignee field — a task can match while having other assignees too. `ALL` = no filter. `UNASSIGNED` = `assignees IS NULL`. Otherwise: match the comma-list as a **whole token** (same scheme as `area` above) — a task matches if the given name is *one of* its assignees. |
 | `due` | `ALL` \| `OVERDUE` \| `TODAY` \| `WEEK` \| `NONE` | `OVERDUE`: `dueDate < today` **and** status not inactive (§4). `TODAY`: `today ≤ dueDate < tomorrow`. `WEEK`: `today ≤ dueDate < today+7d`. `NONE`: `dueDate IS NULL`. |
 | `sort` | `dueDate` \| `priority` \| `createdAt` \| `updatedAt` \| `title` | See §7.2. Default: `createdAt`. |
 | `order` | `asc` \| `desc` | Default: `desc`. |
@@ -152,7 +156,7 @@ All active filter conditions are AND-ed together.
 
 ### 7.3 Distinct assignees
 
-For the assignee filter dropdown: all non-null `assignee` values, deduplicated, alphabetically sorted (locale-aware compare). No pagination.
+For the assignee filter dropdown: every task's `assignees` list is parsed (`parseAssignees`) and flattened into individual names, deduplicated, alphabetically sorted (locale-aware compare). No pagination.
 
 ### 7.4 Dashboard stats
 
@@ -235,7 +239,8 @@ This section describes *behavior*, not appearance.
 ### 10.2 Task create/edit modal
 
 - One modal instance exists globally (mounted once at the app root) with two entry modes: **create** (no task) and **edit** (a specific task). Any part of the UI can request either mode through a shared global controller — opening it in edit mode loads that task's current values into the form; opening in create mode resets to defaults.
-- Default values for a brand-new task: empty title/description, `type = BUG`, `status = TODO`, `priority = MEDIUM`, no areas, no due date, no assignee, no time spent. *(Note: the type defaulting to `BUG` rather than `TASK` is the actual current behavior — carry it forward as-is unless the rebuild intentionally revisits it.)*
+- Default values for a brand-new task: empty title/description, `type = BUG`, `status = TODO`, `priority = MEDIUM`, no areas, no due date, no assignees, no time spent. *(Note: the type defaulting to `BUG` rather than `TASK` is the actual current behavior — carry it forward as-is unless the rebuild intentionally revisits it.)*
+- The "assignees" field is a free-text tag input — type a name and press Enter or `,` to add it as a chip; Backspace on an empty draft removes the last chip. Known names from existing tasks are offered as autocomplete suggestions, fetched when the modal opens (best-effort — a failed fetch just means no suggestions).
 - Re-opening the modal — including reopening it for the *same* task right after a cancelled edit — must re-derive the form fields fresh from that task's current data, not reuse stale in-memory form state from the previous time it was open.
 - The "areas" field is a multi-select where each option is independently toggleable on/off (not a single-choice control).
 - On submit: run client-known validation implicitly by delegating straight to the shared create/update mutation; if it returns field errors, show them inline per-field and show any top-level message (e.g. "task no longer exists") above the form buttons; the submit button shows a busy state and is disabled while in flight; the Cancel button is also disabled while submitting (to avoid closing mid-save). On success: show a success toast ("Task created" / "Task updated"), refresh the underlying page's data, and close the modal.
@@ -300,16 +305,16 @@ Standard project scripts to reproduce: install dependencies (which should also g
 
 ## 13. Seed / demo data
 
-For local development and demos, seed the database with a reset-then-insert of a fixed set of sample tasks spanning every status and priority, a mix of areas, some overdue due dates, some with no due date, and at least one unassigned task and one with no description. A reasonable set (title / type / area(s) / status / priority / due offset from today / assignee):
+For local development and demos, seed the database with a reset-then-insert of a fixed set of sample tasks spanning every status and priority, a mix of areas, some overdue due dates, some with no due date, at least one unassigned task, some with more than one assignee, and one with no description. A reasonable set (title / type / area(s) / status / priority / due offset from today / assignee(s)):
 
-1. "Design new landing page hero" — TASK, FRONTEND, DOING, HIGH, due +2d, Amelia Chen
+1. "Design new landing page hero" — TASK, FRONTEND, DOING, HIGH, due +2d, Amelia Chen & Sofia Ibrahim
 2. "Fix checkout flow overdue bug" — BUG, FRONTEND, TODO, HIGH, due −3d (overdue), Marcus Reid
 3. "Write Q3 roadmap doc" — TASK, unspecified area, BACKLOG, MEDIUM, due +5d, Priya Nair
 4. "Migrate CI to new runners" — TASK, BACKEND, DONE, LOW, due −10d, Marcus Reid, no description
-5. "Set up product analytics dashboard" — TASK, BACKEND, DOING, MEDIUM, due +1d, Sofia Ibrahim
+5. "Set up product analytics dashboard" — TASK, BACKEND, DOING, MEDIUM, due +1d, Sofia Ibrahim & Priya Nair
 6. "Review vendor security questionnaire" — TASK, unspecified area, BLOCKED, HIGH, due −1d (overdue), Amelia Chen
 7. "Refactor task list pagination" — BUG, FRONTEND, TODO, LOW, no due date, unassigned
-8. "Plan team offsite" — TASK, unspecified area, BACKLOG, LOW, due +21d, Priya Nair
+8. "Plan team offsite" — TASK, unspecified area, BACKLOG, LOW, due +21d, Priya Nair & Marcus Reid & Amelia Chen
 9. "Upgrade Next.js to latest major" — TASK, BACKEND, DONE, MEDIUM, due −14d, Sofia Ibrahim
 10. "Customer interview synthesis" — TASK, unspecified area, DOING, MEDIUM, due +4d, unassigned
 11. "Audit accessibility on task board" — BUG, FRONTEND, TODO, MEDIUM, due +7d, Amelia Chen

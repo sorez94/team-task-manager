@@ -6,7 +6,7 @@ import {
   type TaskType,
 } from "../lib/generated/prisma/client";
 import { PrismaLibSql } from "@prisma/adapter-libsql";
-import { serializeAreas } from "../lib/utils";
+import { serializeAreas, serializeAssignees } from "../lib/utils";
 
 const adapter = new PrismaLibSql({
   url: process.env.DATABASE_URL ?? "file:./prisma/dev.db",
@@ -29,7 +29,7 @@ const TASKS: {
   status: Status;
   priority: Priority;
   dueDate: Date | null;
-  assignee: string | null;
+  assignees: string[];
 }[] = [
   {
     title: "Design new landing page hero",
@@ -39,7 +39,7 @@ const TASKS: {
     status: "DOING",
     priority: "HIGH",
     dueDate: daysFromNow(2),
-    assignee: "Amelia Chen",
+    assignees: ["Amelia Chen", "Sofia Ibrahim"],
   },
   {
     title: "Fix checkout flow overdue bug",
@@ -49,7 +49,7 @@ const TASKS: {
     status: "TODO",
     priority: "CRITICAL",
     dueDate: daysFromNow(-3),
-    assignee: "Marcus Reid",
+    assignees: ["Marcus Reid"],
   },
   {
     title: "Write Q3 roadmap doc",
@@ -59,7 +59,7 @@ const TASKS: {
     status: "BACKLOG",
     priority: "MEDIUM",
     dueDate: daysFromNow(5),
-    assignee: "Priya Nair",
+    assignees: ["Priya Nair"],
   },
   {
     title: "Migrate CI to new runners",
@@ -69,7 +69,7 @@ const TASKS: {
     status: "DONE",
     priority: "LOW",
     dueDate: daysFromNow(-10),
-    assignee: "Marcus Reid",
+    assignees: ["Marcus Reid"],
   },
   {
     title: "Set up product analytics dashboard",
@@ -79,7 +79,7 @@ const TASKS: {
     status: "DOING",
     priority: "MEDIUM",
     dueDate: daysFromNow(1),
-    assignee: "Sofia Ibrahim",
+    assignees: ["Sofia Ibrahim", "Priya Nair"],
   },
   {
     title: "Review vendor security questionnaire",
@@ -89,7 +89,7 @@ const TASKS: {
     status: "BLOCKED",
     priority: "HIGH",
     dueDate: daysFromNow(-1),
-    assignee: "Amelia Chen",
+    assignees: ["Amelia Chen"],
   },
   {
     title: "Refactor task list pagination",
@@ -99,7 +99,7 @@ const TASKS: {
     status: "TODO",
     priority: "LOW",
     dueDate: null,
-    assignee: null,
+    assignees: [],
   },
   {
     title: "Plan team offsite",
@@ -109,7 +109,7 @@ const TASKS: {
     status: "BACKLOG",
     priority: "LOW",
     dueDate: daysFromNow(21),
-    assignee: "Priya Nair",
+    assignees: ["Priya Nair", "Marcus Reid", "Amelia Chen"],
   },
   {
     title: "Upgrade Next.js to latest major",
@@ -119,7 +119,7 @@ const TASKS: {
     status: "DONE",
     priority: "MEDIUM",
     dueDate: daysFromNow(-14),
-    assignee: "Sofia Ibrahim",
+    assignees: ["Sofia Ibrahim"],
   },
   {
     title: "Customer interview synthesis",
@@ -129,7 +129,7 @@ const TASKS: {
     status: "DOING",
     priority: "MEDIUM",
     dueDate: daysFromNow(4),
-    assignee: null,
+    assignees: [],
   },
   {
     title: "Audit accessibility on task board",
@@ -139,7 +139,7 @@ const TASKS: {
     status: "TODO",
     priority: "MEDIUM",
     dueDate: daysFromNow(7),
-    assignee: "Amelia Chen",
+    assignees: ["Amelia Chen"],
   },
   {
     title: "Archive stale feature flags",
@@ -149,15 +149,17 @@ const TASKS: {
     status: "CANCELLED",
     priority: "LOW",
     dueDate: daysFromNow(-30),
-    assignee: "Marcus Reid",
+    assignees: ["Marcus Reid"],
   },
 ];
 
 async function main() {
   console.log("Seeding database…");
   await prisma.task.deleteMany();
-  for (const { areas, ...task } of TASKS) {
-    await prisma.task.create({ data: { ...task, areas: serializeAreas(areas) } });
+  for (const { areas, assignees, ...task } of TASKS) {
+    await prisma.task.create({
+      data: { ...task, areas: serializeAreas(areas), assignees: serializeAssignees(assignees) },
+    });
   }
   console.log(`Seeded ${TASKS.length} tasks.`);
 }

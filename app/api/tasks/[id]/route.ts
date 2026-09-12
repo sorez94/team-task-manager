@@ -3,7 +3,7 @@ import { revalidatePath } from "next/cache";
 import { Prisma, type Status } from "@/lib/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { taskFormSchema } from "@/lib/validations";
-import { parseDuration, serializeAreas } from "@/lib/utils";
+import { parseDuration, serializeAreas, serializeAssignees } from "@/lib/utils";
 
 const STATUS_VALUES: Status[] = ["BACKLOG", "TODO", "DOING", "BLOCKED", "DONE", "CANCELLED"];
 
@@ -59,7 +59,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       );
     }
 
-    const { title, description, type, areas, status, priority, dueDate, assignee, timeSpent } = parsed.data;
+    const { title, description, type, areas, status, priority, dueDate, assignees, timeSpent } = parsed.data;
     const task = await prisma.task.update({
       where: { id },
       data: {
@@ -70,7 +70,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
         status,
         priority,
         dueDate: dueDate ? new Date(dueDate) : null,
-        assignee: assignee || null,
+        assignees: serializeAssignees(assignees),
         timeSpentMinutes: timeSpent ? parseDuration(timeSpent) : null,
       },
     });

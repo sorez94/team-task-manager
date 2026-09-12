@@ -24,12 +24,17 @@ export const taskFormSchema = z.object({
     .refine((val) => !val || !Number.isNaN(Date.parse(val)), {
       message: "Enter a valid date",
     }),
-  assignee: z
-    .string()
-    .trim()
-    .max(80, "Assignee name must be 80 characters or fewer")
-    .optional()
-    .or(z.literal("")),
+  assignees: z
+    .array(
+      z
+        .string()
+        .trim()
+        .min(1, "Assignee name can't be empty")
+        .max(80, "Assignee name must be 80 characters or fewer")
+        .regex(/^[^,]+$/, "Assignee name can't contain a comma")
+    )
+    .max(20, "Add at most 20 assignees")
+    .default([]),
   timeSpent: z
     .string()
     .trim()

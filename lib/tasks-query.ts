@@ -1,6 +1,6 @@
 import type { Prisma, Priority, Status, TaskArea, TaskType } from "@/lib/generated/prisma/client";
 import { prisma } from "./prisma";
-import { startOfToday } from "./utils";
+import { parseAssignees, startOfToday } from "./utils";
 
 export type DueFilter = "ALL" | "OVERDUE" | "TODAY" | "WEEK" | "NONE";
 export type SortField = "dueDate" | "priority" | "createdAt" | "updatedAt" | "title";
@@ -38,7 +38,7 @@ export function buildWhere(filters: TaskFilters): Prisma.TaskWhereInput {
       OR: [
         { title: { contains: filters.q } },
         { description: { contains: filters.q } },
-        { assignee: { contains: filters.q } },
+        { assignees: { contains: filters.q } },
       ],
     });
   }
@@ -68,9 +68,23 @@ export function buildWhere(filters: TaskFilters): Prisma.TaskWhereInput {
   }
 
   if (filters.assignee && filters.assignee !== "ALL") {
-    conditions.push(
-      filters.assignee === "UNASSIGNED" ? { assignee: null } : { assignee: filters.assignee }
-    );
+    if (filters.assignee === "UNASSIGNED") {
+      conditions.push({ assignees: null });
+    } else {
+      // `assignees` is a comma-separated list (e.g. "Amelia Chen,Marcus Reid"),
+      // so match it as a whole token rather than a plain substring — a
+      // `contains` check alone could false-positive if one name were a
+      // substring of another.
+      const assignee = filters.assignee;
+      conditions.push({
+        OR: [
+          { assignees: assignee },
+          { assignees: { startsWith: `${assignee},` } },
+          { assignees: { endsWith: `,${assignee}` } },
+          { assignees: { contains: `,${assignee},` } },
+        ],
+      });
+    }
   }
 
   if (filters.status && filters.status !== "ALL") {
@@ -142,14 +156,16 @@ export async function getFilteredTasks(filters: TaskFilters) {
 
 export async function getDistinctAssignees() {
   const rows = await prisma.task.findMany({
-    where: { assignee: { not: null } },
-    select: { assignee: true },
-    distinct: ["assignee"],
+    where: { assignees: { not: null } },
+    select: { assignees: true },
   });
-  return rows
-    .map((r) => r.assignee)
-    .filter((a): a is string => Boolean(a))
-    .sort((a, b) => a.localeCompare(b));
+  const names = new Set<string>();
+  for (const row of rows) {
+    for (const name of parseAssignees(row.assignees)) {
+      names.add(name);
+    }
+  }
+  return Array.from(names).sort((a, b) => a.localeCompare(b));
 }
 
 export async function getDashboardStats() {

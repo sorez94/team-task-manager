@@ -17,7 +17,7 @@ import { Button } from "@/components/ui/Button";
 import { useTaskModal } from "@/app/providers/TaskModalProvider";
 import { useToast } from "@/app/providers/ToastProvider";
 import { deleteTask } from "@/app/actions/tasks";
-import { cn, parseAreas } from "@/lib/utils";
+import { cn, parseAreas, parseAssignees } from "@/lib/utils";
 
 export function TaskTable({ tasks, isFiltered }: { tasks: Task[]; isFiltered: boolean }) {
   const router = useRouter();
@@ -147,7 +147,7 @@ export function TaskTable({ tasks, isFiltered }: { tasks: Task[]; isFiltered: bo
                         <TimeSpentBadge minutes={task.timeSpentMinutes} />
                       </div>
                       <div className="mt-1.5 lg:hidden">
-                        <AssigneeChip assignee={task.assignee} size="sm" />
+                        <AssigneeChip assignees={parseAssignees(task.assignees)} size="sm" max={2} />
                       </div>
                     </td>
                     <td className="hidden px-3 py-4 sm:table-cell">
@@ -163,7 +163,7 @@ export function TaskTable({ tasks, isFiltered }: { tasks: Task[]; isFiltered: bo
                       <PriorityBadge priority={task.priority} />
                     </td>
                     <td className="hidden px-3 py-4 lg:table-cell">
-                      <AssigneeChip assignee={task.assignee} />
+                      <AssigneeChip assignees={parseAssignees(task.assignees)} max={2} />
                     </td>
                     <td className="hidden px-3 py-4 xl:table-cell">
                       <DueDateBadge dueDate={task.dueDate} status={task.status} />

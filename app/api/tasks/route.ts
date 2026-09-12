@@ -3,7 +3,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { getFilteredTasks, type DueFilter, type SortField, type SortOrder } from "@/lib/tasks-query";
 import { taskFormSchema } from "@/lib/validations";
-import { parseDuration, serializeAreas } from "@/lib/utils";
+import { parseDuration, serializeAreas, serializeAssignees } from "@/lib/utils";
 import type { Priority, Status, TaskArea, TaskType } from "@/lib/generated/prisma/client";
 
 // GET /api/tasks — list tasks, with optional filtering/search/sort query params.
@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const { title, description, type, areas, status, priority, dueDate, assignee, timeSpent } = parsed.data;
+  const { title, description, type, areas, status, priority, dueDate, assignees, timeSpent } = parsed.data;
 
   const task = await prisma.task.create({
     data: {
@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
       status,
       priority,
       dueDate: dueDate ? new Date(dueDate) : null,
-      assignee: assignee || null,
+      assignees: serializeAssignees(assignees),
       timeSpentMinutes: timeSpent ? parseDuration(timeSpent) : null,
     },
   });

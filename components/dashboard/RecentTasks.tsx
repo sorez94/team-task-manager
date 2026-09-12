@@ -10,7 +10,7 @@ import { AssigneeChip } from "@/components/ui/AssigneeChip";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Button } from "@/components/ui/Button";
 import { useTaskModal } from "@/app/providers/TaskModalProvider";
-import { cn } from "@/lib/utils";
+import { cn, parseAssignees } from "@/lib/utils";
 
 export function RecentTasks({ tasks }: { tasks: Task[] }) {
   const { openEdit, openCreate } = useTaskModal();
@@ -61,7 +61,12 @@ export function RecentTasks({ tasks }: { tasks: Task[] }) {
                   <div className="mt-1 flex flex-wrap items-center gap-2">
                     <StatusBadge status={task.status} />
                     <PriorityBadge priority={task.priority} />
-                    <AssigneeChip assignee={task.assignee} size="sm" className="min-w-0 max-w-[10rem]" />
+                    <AssigneeChip
+                      assignees={parseAssignees(task.assignees)}
+                      size="sm"
+                      max={2}
+                      className="min-w-0 max-w-[10rem]"
+                    />
                   </div>
                 </div>
                 <DueDateBadge dueDate={task.dueDate} status={task.status} className="shrink-0" />

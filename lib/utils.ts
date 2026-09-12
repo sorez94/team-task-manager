@@ -179,6 +179,21 @@ export function serializeAreas(areas: TaskArea[]): string | null {
   return areas.length > 0 ? areas.join(",") : null;
 }
 
+/** Parses the comma-separated `assignees` column into a list of names, dropping blanks. */
+export function parseAssignees(value: string | null | undefined): string[] {
+  if (!value) return [];
+  return value
+    .split(",")
+    .map((v) => v.trim())
+    .filter((v) => v.length > 0);
+}
+
+/** Serializes a list of assignee names back into the comma-separated form the `assignees` column stores. */
+export function serializeAssignees(assignees: string[]): string | null {
+  const cleaned = assignees.map((a) => a.trim()).filter((a) => a.length > 0);
+  return cleaned.length > 0 ? cleaned.join(",") : null;
+}
+
 const MINUTES_PER_HOUR = 60;
 const MINUTES_PER_DAY = 24 * MINUTES_PER_HOUR;
 

@@ -9,7 +9,7 @@ import { DueDateBadge } from "@/components/ui/DueDateBadge";
 import { TimeSpentBadge } from "@/components/ui/TimeSpentBadge";
 import { AssigneeChip } from "@/components/ui/AssigneeChip";
 import { Select } from "@/components/ui/Field";
-import { parseAreas, STATUS_LABEL, STATUS_OPTIONS, cn } from "@/lib/utils";
+import { parseAreas, parseAssignees, STATUS_LABEL, STATUS_OPTIONS, cn } from "@/lib/utils";
 
 export function TaskCard({
   task,
@@ -76,7 +76,7 @@ export function TaskCard({
       </div>
 
       <div className="mt-3 flex items-center justify-between gap-2 border-t border-slate-100 pt-3 dark:border-slate-800">
-        <AssigneeChip assignee={task.assignee} size="sm" className="min-w-0 flex-1" />
+        <AssigneeChip assignees={parseAssignees(task.assignees)} size="sm" max={2} className="min-w-0 flex-1" />
         <Select
           aria-label={`Change status for ${task.title}`}
           value={task.status}
