@@ -4,6 +4,7 @@ import { LayoutGrid, List, Loader2, Search, ArrowDownAZ, ArrowUpAZ } from "lucid
 import { useRouter, useSearchParams } from "next/navigation";
 import { useRef, useState } from "react";
 import { Select } from "@/components/ui/Field";
+import { ExportButton } from "@/components/tasks/ExportButton";
 import { useViewTransition } from "@/components/tasks/ViewTransition";
 import {
   AREA_LABEL,
@@ -249,6 +250,8 @@ export function FilterBar({ view, assignees }: { view: "table" | "board"; assign
           Board
         </button>
       </div>
+
+      <ExportButton />
     </div>
   );
 }
