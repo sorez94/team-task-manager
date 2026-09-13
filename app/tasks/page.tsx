@@ -106,7 +106,17 @@ export default async function TasksPage({
 
         <TasksViewContent view={view}>
           {view === "board" ? (
-            <TaskBoard tasks={tasks} isFiltered={isFiltered} />
+            <>
+              {/* Board view needs room for status columns, so it's desktop-only;
+                  mobile always falls back to the table regardless of the `view`
+                  param (e.g. a bookmarked or shared board link). */}
+              <div className="hidden sm:block">
+                <TaskBoard tasks={tasks} isFiltered={isFiltered} />
+              </div>
+              <div className="sm:hidden">
+                <TaskTable tasks={tasks} isFiltered={isFiltered} />
+              </div>
+            </>
           ) : (
             <>
               <TaskTable tasks={tasks} isFiltered={isFiltered} />

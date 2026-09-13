@@ -210,7 +210,7 @@ export function FilterBar({ view, assignees }: { view: "table" | "board"; assign
         </button>
       </div>
 
-      <div className="flex items-center gap-1 rounded-lg bg-slate-100 p-1 dark:bg-slate-800">
+      <div className="hidden items-center gap-1 rounded-lg bg-slate-100 p-1 dark:bg-slate-800 sm:flex">
         <button
           onClick={() => setView("table")}
           disabled={pendingView !== null}
