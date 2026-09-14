@@ -64,6 +64,8 @@ model Task {
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 
+  attachments      Attachment[]
+
   @@index([status])
   @@index([priority])
   @@index([type])
@@ -71,4 +73,21 @@ model Task {
   @@index([assignees])
   @@index([dueDate])
   @@index([createdAt])
+}
+
+// An image attached to a task. Bytes live in this row (BLOB) rather than on
+// disk — this app runs on Vercel in production, where serverless functions
+// have no persistent filesystem (see the driver-adapter note on prisma.ts),
+// so the database is the only storage that survives a deploy.
+model Attachment {
+  id        String   @id @default(cuid())
+  taskId    String
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  fileName  String
+  mimeType  String
+  size      Int
+  data      Bytes
+  createdAt DateTime @default(now())
+
+  @@index([taskId])
 }

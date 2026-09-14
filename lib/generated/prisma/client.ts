@@ -46,3 +46,8 @@ export { Prisma }
  * 
  */
 export type Task = Prisma.TaskModel
+/**
+ * Model Attachment
+ * 
+ */
+export type Attachment = Prisma.AttachmentModel

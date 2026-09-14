@@ -7,6 +7,7 @@ A clean, production-ready task manager built with the Next.js App Router and Pri
 ## Features
 
 - Create, edit, delete, and complete/reopen tasks
+- Attach any number of images (PNG/JPEG/GIF/WebP, up to 4MB each) to a task, stored in the database so they survive serverless deploys
 - Dashboard with summary stat cards (total, to do, doing, blocked, completed, overdue) and a "recently updated" feed
 - Table and Kanban board views for the task list
 - Six-stage status workflow (Backlog, To Do, Doing, Blocked, Done, Cancelled)
@@ -42,6 +43,7 @@ task-manager/
 │   ├── tasks-query.ts        # Shared filter/sort/search query builder + dashboard stats
 │   ├── validations.ts        # Zod schema for the task form
 │   ├── utils.ts               # Formatting helpers, badge color maps, cn()
+│   ├── attachments.ts         # Shared attachment constants (size/type limits) + formatFileSize
 │   ├── useMounted.ts          # SSR-safe "has mounted" hook (used by modal/toast portals)
 │   └── generated/prisma/     # Generated Prisma client (git-ignored, regenerated on install)
 ├── app/
@@ -53,12 +55,15 @@ task-manager/
 │   │   ├── page.tsx            # Task list (table/board), reads filters from the URL
 │   │   └── loading.tsx
 │   ├── actions/tasks.ts        # Server Actions: createTask, updateTask, deleteTask, setTaskStatus
-│   ├── api/tasks/               # REST API routes (GET/POST /api/tasks, GET/PATCH/DELETE /api/tasks/:id)
+│   ├── api/
+│   │   ├── tasks/               # REST API routes (GET/POST /api/tasks, GET/PATCH/DELETE /api/tasks/:id,
+│   │   │                        # GET/POST /api/tasks/:id/attachments)
+│   │   └── attachments/[id]/    # GET (image bytes) / DELETE for one attachment
 │   └── providers/               # ToastProvider, TaskModalProvider (client contexts)
 └── components/
     ├── layout/AppShell.tsx      # Sidebar + mobile nav
     ├── dashboard/                # StatCard, RecentTasks
-    ├── tasks/                    # FilterBar, TaskTable, TaskBoard, TaskCard, TaskModal
+    ├── tasks/                    # FilterBar, TaskTable, TaskBoard, TaskCard, TaskModal, AttachmentsField
     └── ui/                        # Button, Field, Modal, ConfirmDialog, badges, Skeleton, EmptyState
 ```
 
@@ -78,6 +83,7 @@ enum Priority {
   LOW
   MEDIUM
   HIGH
+  CRITICAL
 }
 
 enum TaskType {
@@ -85,27 +91,57 @@ enum TaskType {
   TASK
 }
 
-// Which side of the stack a task belongs to. Nullable — not every task
-// cleanly maps to one side.
+// Which side(s) of the stack a task touches. A task can span more than one
+// area, so this isn't a column type SQLite has (no scalar-list support) —
+// see `areas` below, which stores it as a comma-separated list of these.
 enum TaskArea {
   FRONTEND
   BACKEND
+  DESIGN
+  PRODUCT
 }
 
 model Task {
-  id          String    @id @default(cuid())
-  title       String
-  description String?
-  type        TaskType  @default(BUG)
-  area        TaskArea?
-  status      Status    @default(TODO)
-  priority    Priority  @default(MEDIUM)
-  dueDate     DateTime?
-  assignees   String?   // comma-separated list of free-text names
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id               String    @id @default(cuid())
+  title            String
+  description      String?
+  type             TaskType  @default(BUG)
+  areas            String?   // comma-separated TaskArea values, e.g. "FRONTEND,DESIGN"
+  status           Status    @default(TODO)
+  priority         Priority  @default(MEDIUM)
+  dueDate          DateTime?
+  assignees        String?   // comma-separated list of free-text names
+  timeSpentMinutes Int?      // time logged, in minutes
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  attachments      Attachment[]
+}
+
+// An image attached to a task. Bytes live in this row (BLOB) rather than on
+// disk — this app runs on Vercel in production, where serverless functions
+// have no persistent filesystem, so the database is the only storage that
+// survives a deploy.
+model Attachment {
+  id        String   @id @default(cuid())
+  taskId    String
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  fileName  String
+  mimeType  String
+  size      Int
+  data      Bytes
+  createdAt DateTime @default(now())
 }
 ```
+
+`areas` and `assignees` are comma-separated strings rather than native
+lists (SQLite has no scalar-list column type) — always go through the
+parse/serialize helpers in `lib/utils.ts` (`parseAreas`/`serializeAreas`,
+`parseAssignees`/`serializeAssignees`) rather than splitting/joining them
+inline. `timeSpentMinutes` is entered/displayed as a compact string (e.g.
+`"2h"`, `"45m"`, `"1d 2h"`) via `formatDuration`/`parseDuration`, also in
+`lib/utils.ts`. Attachments are capped at 4MB and `image/png|jpeg|gif|webp`
+only — see `lib/attachments.ts`.
 
 ### Why a driver adapter?
 
@@ -187,15 +223,23 @@ turso db tokens create task-manager        # -> DATABASE_AUTH_TOKEN
 
 ### 2. Push the schema to it
 
-Run this once, locally, pointed at Turso (it won't touch your local dev database):
+`npx prisma db push`/`migrate` can't connect to a `libsql://` URL directly — Prisma's schema engine only recognizes `file:`/`postgresql:`/etc. schemes for that (the libSQL **driver adapter** only handles the app's own runtime queries, per `lib/prisma.ts`; the CLI's push/migrate engine is a separate process that doesn't go through it). Generate the SQL locally instead (no live connection needed) and apply it with the [Turso CLI](https://docs.turso.tech/cli/installation):
 
 ```bash
-DATABASE_URL="libsql://task-manager-<your-org>.turso.io" \
-DATABASE_AUTH_TOKEN="<token from above>" \
-npx prisma db push
+npx prisma migrate diff --from-empty --to-schema prisma/schema.prisma --script > schema.sql
+turso db shell task-manager < schema.sql
 ```
 
-Optionally seed it with demo data the same way, swapping `prisma db push` for `npm run db:seed` (with the same two env vars set).
+For a later schema change, diff against what's actually on Turso instead of from-empty, so you only apply what changed:
+
+```bash
+turso db shell task-manager ".schema" > turso-schema.sql
+npx prisma migrate diff --from-migrations prisma/migrations --to-schema prisma/schema.prisma --script > schema.sql
+# review schema.sql, then:
+turso db shell task-manager < schema.sql
+```
+
+Seed demo data the same way Turso data is queried elsewhere in this doc — via the app itself, or by running `npm run db:seed` with `DATABASE_URL`/`DATABASE_AUTH_TOKEN` set to Turso's values (seeding uses the driver adapter through `lib/prisma.ts`, like the app does, not the schema engine, so it isn't affected by the limitation above).
 
 ### 3. Deploy
 
@@ -219,3 +263,7 @@ In addition to the Server Actions used by the UI (create/update/delete/status-ch
 - `GET /api/tasks/:id` — fetch one task
 - `PATCH /api/tasks/:id` — update a task, or pass `{ "status": "DONE" }` for a quick status-only change
 - `DELETE /api/tasks/:id` — delete a task
+- `GET /api/tasks/:id/attachments` — list a task's image attachments (metadata only — `id`/`fileName`/`mimeType`/`size`/`createdAt`, never the bytes)
+- `POST /api/tasks/:id/attachments` — upload one image (`multipart/form-data`, field `file`; PNG/JPEG/GIF/WebP, max 4MB)
+- `GET /api/attachments/:id` — the raw image bytes, for use directly as an `<img src>`
+- `DELETE /api/attachments/:id` — delete one attachment

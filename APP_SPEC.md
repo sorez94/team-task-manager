@@ -18,7 +18,7 @@ Tasks are created/edited/deleted through a single modal reused across the whole 
 ## 2. Non-goals
 
 - No authentication, authorization, or multi-tenancy.
-- No file attachments, comments, activity log, or notifications beyond in-app toasts.
+- No comments, activity log, or notifications beyond in-app toasts. (Image attachments are supported — see §4.1 and §9.3 — but there's no attachment versioning, no non-image file types, and no per-attachment access control.)
 - No real-time sync between browser tabs/users beyond a full page-data refresh after a mutation.
 - No visual/design specification — colors, layout spacing, fonts, and iconography are intentionally left out of this document.
 
@@ -70,6 +70,31 @@ Task
 **Time spent encoding:** stored as a plain integer number of minutes (`null` if not logged). Entered and displayed as a compact human string — see §6.1.
 
 **Indexes:** on `status`, `priority`, `type`, `areas`, `assignees`, `dueDate`, `createdAt` — i.e., every field used as a filter or sort key.
+
+### 4.1 Attachments (images)
+
+A second entity, **Attachment**, in a one-to-many relation with Task (`onDelete: Cascade`, so deleting a task deletes its attachments):
+
+```
+Attachment
+├── id        String    (primary key, generated)
+├── taskId    String    (foreign key → Task.id, indexed)
+├── fileName  String    (original filename, as uploaded)
+├── mimeType  String    (one of the allowed image types below)
+├── size      Int       (byte size)
+├── data      Bytes     (the image itself)
+└── createdAt DateTime  (set once, on upload)
+```
+
+**Why bytes live in the database, not on disk:** production has no persistent local filesystem (see §3/README — serverless functions on a fresh container each invocation), so a `public/uploads`-style approach would silently lose every image on the next deploy. Storing the bytes as a `BLOB` column works identically in local dev and production with no extra infrastructure.
+
+**Constraints, enforced server-side (not just as a client-side hint):**
+- Allowed MIME types: `image/png`, `image/jpeg`, `image/gif`, `image/webp`.
+- Max size per image: 4MB — chosen to stay safely under typical serverless-platform request body caps (e.g. Vercel's ~4.5MB), since the bytes are sent as a raw (non-base64) `multipart/form-data` part.
+- A task may have any number of attachments (0..N).
+- Attachments are immutable once uploaded — there's no "replace" or "rename" operation, only upload and delete.
+
+**Metadata vs. bytes:** any endpoint or query that lists/returns attachments for a task returns metadata only (`id`, `fileName`, `mimeType`, `size`, `createdAt`) — never the `data` bytes inline. The image itself is fetched separately, by id, as a byte stream (see §9.3), so a task with several large images doesn't bloat every task list/detail response.
 
 ## 5. Formatting / parsing utilities (exact algorithms)
 
@@ -189,6 +214,12 @@ Every successful mutation invalidates/refreshes both the dashboard (`/`) and tas
 | `GET /api/tasks/:id` | — | `200 { task }` | `404` if not found |
 | `PATCH /api/tasks/:id` | either a full task form JSON **or** a "quick" partial body of exactly `{ "status": "<Status>" }` | `200 { task }` | `400` invalid JSON; `422` invalid status value or full-form validation failure; `404` if the task no longer exists |
 | `DELETE /api/tasks/:id` | — | `200 { success: true }` | `404` if not found |
+| `GET /api/tasks/:id/attachments` | — | `200 { attachments }` (metadata only) | — |
+| `POST /api/tasks/:id/attachments` | `multipart/form-data`, field `file` | `201 { attachment }` | `404` task not found; `422` type/size rejected |
+| `GET /api/attachments/:id` | — | `200`, raw image bytes | `404` if not found |
+| `DELETE /api/attachments/:id` | — | `200 { success: true }` | `404` if not found |
+
+Attachment upload/list/delete details are in §9.3; the rest of this table follows the same conventions as the task endpoints above.
 
 The "quick status update" detection rule: the parsed JSON body is a plain object with **exactly one key**, and that key is `"status"`. Anything else (including `{ status, title }`) is routed through full-form validation instead.
 
@@ -222,6 +253,19 @@ Behavior:
 - The distinct-assignee list (for the assignee filter's options) is fetched unconditionally alongside the tasks.
 - If the requested `page` is beyond the last valid page for the current filters (e.g. a bookmarked URL made stale by a filter change or deleted tasks) **and** there's at least one matching task, the request is redirected to the last valid page — preserving every other query param — rather than rendering a misleading empty table. If the corrected page is 1, the `page` param is dropped from the URL entirely rather than written as `page=1`.
 - A boolean "is filtered" state (true if `q` is non-empty or any filter is off its `ALL` default) drives: the header's "N tasks total" vs. "N tasks matching your filters" copy, and which empty-state message/action shows when there are zero results.
+
+### 9.3 Attachment endpoints
+
+Attachments are managed through plain Route Handlers (not Server Actions), so an upload's raw request body can be read directly and so external/programmatic callers get the same REST surface documented in §8.2:
+
+| Route | Method | Behavior |
+|---|---|---|
+| `/api/tasks/:id/attachments` | `GET` | List attachment metadata for a task, oldest first. 200 with `{ attachments: [] }` even if the task has none. |
+| `/api/tasks/:id/attachments` | `POST` | Upload one image. Body: `multipart/form-data` with a `file` field. 404 if the task doesn't exist; 422 if the type/size constraints from §4.1 are violated; 201 with the created attachment's metadata on success. |
+| `/api/attachments/:id` | `GET` | Streams the raw image bytes with the stored `mimeType` as `Content-Type` and an aggressive immutable cache header (attachment ids are never reused, and attachments are never edited in place — only deleted). Meant to be used directly as an `<img src>`. |
+| `/api/attachments/:id` | `DELETE` | Deletes one attachment. 404 if it doesn't exist. |
+
+**UI behavior:** the task edit modal shows a thumbnail grid of the task's attachments (fetched on open) with a per-image delete control, and an "add image(s)" control that accepts multiple files and uploads them sequentially. Attachments can only be added to a task that already exists — the create-task form shows a hint to save first rather than accepting files before there's a `taskId` to attach them to.
 
 ## 10. Client-side interaction & state logic
 

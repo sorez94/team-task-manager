@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { Label, Input, Textarea, Select, FieldError } from "@/components/ui/Field";
 import { CheckboxChips } from "@/components/ui/CheckboxChips";
 import { AssigneesInput } from "@/components/ui/AssigneesInput";
+import { AttachmentsField } from "@/components/tasks/AttachmentsField";
 import { createTask, updateTask } from "@/app/actions/tasks";
 import { useToast } from "@/app/providers/ToastProvider";
 import {
@@ -256,6 +257,17 @@ export function TaskModal({
             aria-invalid={Boolean(errors.assignees)}
           />
           <FieldError>{errors.assignees}</FieldError>
+        </div>
+
+        <div>
+          <Label>Attachments</Label>
+          {isEditing && task ? (
+            <AttachmentsField key={task.id} taskId={task.id} />
+          ) : (
+            <p className="text-sm text-slate-500 dark:text-slate-400">
+              Save the task first, then you can attach images.
+            </p>
+          )}
         </div>
 
         {formError && (

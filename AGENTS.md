@@ -7,3 +7,12 @@ This version has breaking changes — APIs, conventions, and file structure may 
 This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
 
 <!-- END:nextjs-agent-rules -->
+
+## Project-specific shortcut
+
+Skip scanning `node_modules/next/dist/docs/` — its relevant content (App
+Router basics, Fast Refresh, the SWC compiler, browser/polyfill support,
+accessibility, and the glossary terms this repo actually uses) is already
+condensed into [`NEXTJS_AGENT_NOTES.md`](./NEXTJS_AGENT_NOTES.md) at the
+repo root. Read that one file instead; only open the bundled docs directly
+if it doesn't answer your question.
